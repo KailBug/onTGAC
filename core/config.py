@@ -1,7 +1,3 @@
-"""
-Text2SQL Agent for TGAC
-LangGraph + Qwen3-Coder-30B + ReAct
-"""
 class Config:
     QWEN_MODEL = "qwen3-coder:30b"              #Ollama模型名称
     EMBEDDING_MODEL = "qwen3-embedding:8b"        #用于向量检索的嵌入模型

@@ -259,7 +259,6 @@ class execute_sql_with_pymysql:
 if __name__ == '__main__':
 
     #模式变量 INSERT、 EXECUTE、 OTHER
-    #已执行过插入操作，不要再次使用INSERT
     MODE  = "OTHER"
 
     sql_executor = execute_sql_with_pymysql()
@@ -286,12 +285,6 @@ if __name__ == '__main__':
     elif MODE == "OTHER":
         #自定义操作
         print(Fore.GREEN+'执行自定义功能'+Style.RESET_ALL)
-
-        # splitter = Raw_splitter()
-        # input_file_path = "data/final_dataset_raw.json"
-        # output_file_path0 = "data/final_dataset_goldensql.json"
-        # output_file_path1 = "data/final_dataset_pure.json"
-        # splitter.split(input_file_path, output_file_path0, output_file_path1)
         schema_file_path = "data/schema.json"
         print(Fore.GREEN + schema_file_path + Style.RESET_ALL)
         Mapping = Mapping(schema_file_path)

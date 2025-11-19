@@ -1,9 +1,6 @@
 import os
 import json
-import sys
 from tqdm import tqdm
-from pprint import pprint
-
 import faiss
 import numpy as np
 from langchain_ollama import OllamaEmbeddings
@@ -23,7 +20,7 @@ class SchemaRetriever:
             base_url=Config.OLLAMA_BASE_URL
         )
         print(Fore.GREEN + "OllamaEmbeddings构建完成" + Style.RESET_ALL)
-        self.schema_file_path_4generate = schema_file_path      #用于_extract_schema_from_db(self) -> Dict
+        self.schema_file_path_4generate = schema_file_path              #用于_extract_schema_from_db(self) -> Dict
         print(Fore.GREEN + "(在SchemaRetriver中)schema_file_path_4generate: " + self.schema_file_path_4generate + Style.RESET_ALL)
         self.schema_data = self._load_schema(schema_file_path)
         print(Fore.GREEN + "schema_data加载完成: schema_data[0][table_name] = " +self.schema_data[0]["table_name"]+ Style.RESET_ALL)
@@ -43,7 +40,7 @@ class SchemaRetriever:
 
     def _build_index(self):
         """构建FAISS索引"""
-        for item in self.schema_data:    #为每个表和字段生成描述文本
+        for item in self.schema_data:                                                       #为每个表和字段生成描述文本
             table_name = item['table_name']
             columns = item['columns']
             table_desc = f"表名: {table_name}, 包含字段: {', '.join([col['col'] for col in columns])}\n"   #表级别描述
@@ -60,8 +57,6 @@ class SchemaRetriever:
                     "column": col['col'],
                     "type": "column"
                 })
-            # pprint(self.schema_texts,width=120,depth=5)
-            # sys.exit()
 
         embd_cache_file_path:str = "data/embd.npy"
         faiss_cache_file_path:str = "data/index.faiss"
@@ -117,22 +112,8 @@ class SchemaRetriever:
                 item = next((item for item in self.schema_texts if table == item['table_name']), None)
                 retrieved_schema[table] = item      #用table为键，用整个Dict对象为值
 
-        # pprint(retrieved_schema, width=120, depth=5)
-        # sys.exit()
-
-        schema_str = "相关数据表结构:\n"               #格式化输出
-        # for table, item in retrieved_schema.items():
-        #     columns = item.get("column")
-        #     if columns is None:
-        #         print("不嘻嘻")
-        #         continue
-        #     print(f"{Fore.GREEN}嘻嘻{Style.RESET_ALL}")
-        #     schema_str += f"表名: {table}\n"
-        #     for col in columns:
-        #         schema_str += f"  - {col['col']} ({col['type']}): {col['description']}\n"
-        # return schema_str
+        schema_str = "相关数据表结构:\n"               #格式化输出每一个question需要的schema信息
         for table, item in retrieved_schema.items():
             desc = item.get("text")
-            # print(f"{Fore.GREEN}嘻嘻{Style.RESET_ALL}")
             schema_str += desc
         return schema_str

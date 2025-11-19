@@ -1,8 +1,7 @@
-import sys
-
+import re
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import OllamaLLM
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph
 from colorama import Fore, Style
 
 from core.config import Config
@@ -16,7 +15,8 @@ class Text2SQLAgent:
         self.llm = OllamaLLM(
             model=Config.QWEN_MODEL,
             base_url=Config.OLLAMA_BASE_URL,
-            temperature=0.1
+            temperature=0.1,
+            # num_thread=4
         )
         print(Fore.GREEN + "OllamaLLM构建完成" + Style.RESET_ALL)
         self.schema_retriever = SchemaRetriever(schema_file_path)
@@ -72,19 +72,17 @@ class Text2SQLAgent:
         )
 
     def retrieve_schema_node(self, state: AgentState) -> AgentState:
-        """节点1: 检索相关Schema"""
+        """节点:检索相关Schema"""
         question = state["question"]
         schema = self.schema_retriever.retrieve(question, top_k=5)
         state["schema"] = schema
-        # print(f"{Fore.GREEN}{state.get("schema")}{Style.RESET_ALL}")
-        # sys.exit()
         state["error_count"] = 0
         state["conversation_history"] = []
         return state
 
     def think_and_generate_node(self, state: AgentState) -> AgentState:
         """节点2: 思考并生成SQL (ReAct模式)"""
-        few_shot_text = ""      #准备Few-shot示例
+        few_shot_text = ""                                              #准备Few-shot示例
         for item in Config.FEW_SHOT_EXAMPLES:
             few_shot_text += f"示例{item["sql_id"]}:\n"
             few_shot_text += f"\t问题:{item["question"]}\n"
@@ -101,23 +99,21 @@ class Text2SQLAgent:
             history=history
         )
         print(Fore.GREEN + "调用LLM生成ing..." + Style.RESET_ALL)
-        response = self.llm.invoke(prompt)  #调用llm
+        response = self.llm.invoke(prompt)
 
-        print(response)
-
-        thinking = ""
         sql = ""
-        lines = response.strip().split('\n')
-        #调整返回的数据格式
-        for i, line in enumerate(lines):
-            if line.startswith('思考:'):
-                thinking = line.replace('思考:', '').strip()
-                if not thinking and i + 1 < len(lines):     #可能思考内容在下一行
-                    thinking = lines[i + 1].strip()
-            elif line.startswith('SQL:'):
-                sql = line.replace('SQL:', '').strip()
-                if not sql and i + 1 < len(lines):          #SQL可能在下一行
-                    sql = lines[i + 1].strip()
+        thinking = ""
+        text = ""
+        if isinstance(response, str):
+            text = response
+        else:
+            text = getattr(response, 'content', str(response))
+
+        match = re.search(r'(?i)sql[:：]\s*([\s\S]*?;)', text)
+        if match:
+            sql = match.group(1).strip()
+        else:
+            sql = ""
 
         state["sql"] = sql
         state["thinking"] = thinking

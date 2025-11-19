@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env
+
+# IDEs and editors
+.idea/               # PyCharm 配置目录（非常重要！）
+.vscode/
+*.swp
+.DS_Store            # macOS 系统文件
+Thumbs.db            # Windows 缩略图缓存
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# Environment variables (SECRETS!)
+.env
+.env.local
+.env.*.local
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+
+# MyPy cache
+.mypy_cache/
+
+# Rope refactoring tool
+.ropeproject/

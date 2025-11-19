@@ -1,6 +1,4 @@
 import json
-import sys
-
 from colorama import Fore, Style
 
 from core.text2sql_agent import Text2SQLAgent
@@ -23,8 +21,6 @@ class Mapping:
         print(Fore.GREEN + "Agent构建完成" + Style.RESET_ALL)
         graph = agent.build_graph()
         print(Fore.GREEN + "Graph构建完成" + Style.RESET_ALL)
-        # compiled_graph = graph.compile()
-        # print(Fore.GREEN + "Graph编译完成" + Style.RESET_ALL)
         questions_data_mapping = []
 
         with open(input_file_path, "r", encoding="utf-8") as f:
@@ -73,7 +69,6 @@ class Mapping:
                     "success": False,
                     "error_info": str(e)
                 })
-            sys.exit()
 
         with open(output_file_path, "w", encoding="utf-8") as f:
             json.dump(questions_data_mapping, f, ensure_ascii=False, indent=4)
