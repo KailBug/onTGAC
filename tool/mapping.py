@@ -54,8 +54,7 @@ class Mapping:
                     "sql":sql,
                     "复杂度":item.get("复杂度","复杂度_error"),
                     "table_list":item.get("table_list","table_list_error"),
-                    "knowledge":item.get("knowledge","knowledge_error"),
-                    "success":True
+                    "knowledge":item.get("knowledge","knowledge_error")
                 })
             except Exception as e:
                 print(Fore.RED + f"处理错误: {str(e)}" + Style.RESET_ALL)
@@ -65,9 +64,7 @@ class Mapping:
                     "sql": "",
                     "复杂度": item.get("复杂度","复杂度_error"),
                     "table_list": item.get("table_list","table_list_error"),
-                    "knowledge": item.get("knowledge","knowledge_error"),
-                    "success": False,
-                    "error_info": str(e)
+                    "knowledge": item.get("knowledge","knowledge_error")
                 })
 
         with open(output_file_path, "w", encoding="utf-8") as f:

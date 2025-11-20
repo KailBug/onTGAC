@@ -3,10 +3,9 @@ import pymysql
 from decimal import Decimal
 from datetime import datetime, date
 from pathlib import Path
-from typing import List, Dict, Union
-from colorama import init, Fore, Style
+from typing import List, Dict
+from colorama import  Fore, Style
 
-from tool.split_raw import Raw_splitter
 from tool.mapping import Mapping
 
 class DecimalEncoder(json.JSONEncoder):
