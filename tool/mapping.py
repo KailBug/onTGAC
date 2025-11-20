@@ -1,4 +1,5 @@
 import json
+import traceback
 from colorama import Fore, Style
 
 from core.text2sql_agent import Text2SQLAgent
@@ -58,6 +59,12 @@ class Mapping:
                 })
             except Exception as e:
                 print(Fore.RED + f"处理错误: {str(e)}" + Style.RESET_ALL)
+                traceback.print_exc()
+                if hasattr(e, "response"):
+                    print(f"API Response Body: {e.response}")
+                if hasattr(e, 'request'):
+                    print(f"API Request URL: {e.request.url}")
+
                 questions_data_mapping.append({
                     "sql_id": sql_id,
                     "question": question,
@@ -66,6 +73,7 @@ class Mapping:
                     "table_list": item.get("table_list","table_list_error"),
                     "knowledge": item.get("knowledge","knowledge_error")
                 })
+
 
         with open(output_file_path, "w", encoding="utf-8") as f:
             json.dump(questions_data_mapping, f, ensure_ascii=False, indent=4)

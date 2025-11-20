@@ -1,9 +1,17 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class Config:
-    QWEN_MODEL = "qwen3-coder:30b"              #Ollama模型名称
-    EMBEDDING_MODEL = "qwen3-embedding:8b"        #用于向量检索的嵌入模型
-    OLLAMA_BASE_URL = "http://localhost:11434"
-    EMBEDDING_URL = f"{OLLAMA_BASE_URL}/api/embeddings"
-    GENERATE_URL = f"{OLLAMA_BASE_URL}/api/generate"
+    # QWEN_MODEL = "qwen3-coder:30b"              #Ollama模型名称
+    # EMBEDDING_MODEL = "qwen3-embedding:8b"        #用于向量检索的嵌入模型
+    # OLLAMA_BASE_URL = "http://localhost:11434"
+    # EMBEDDING_URL = f"{OLLAMA_BASE_URL}/api/embeddings"
+    # GENERATE_URL = f"{OLLAMA_BASE_URL}/api/generate"
+
+    API_KEY = os.getenv("DASHSCOPE_API_KEY")
+    BASE_URL = os.getenv("DASHSCOPE_BASE_URL")
 
     #StarRocks数据库配置
     DB_CONFIG = {

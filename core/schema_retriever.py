@@ -1,9 +1,9 @@
 import os
 import json
-from tqdm import tqdm
 import faiss
 import numpy as np
-from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from tqdm import tqdm
 from typing import List, Dict
 from colorama import Fore, Style
 
@@ -15,15 +15,21 @@ class SchemaRetriever:
         """
         :param schema_file_path:保存schema.json文件的路径
         """
-        self.embeddings = OllamaEmbeddings(
-            model=Config.EMBEDDING_MODEL,
-            base_url=Config.OLLAMA_BASE_URL
+        # self.embeddings = OllamaEmbeddings(
+        #     model=Config.EMBEDDING_MODEL,
+        #     base_url=Config.OLLAMA_BASE_URL
+        # )
+        self.embeddings_cloud = OpenAIEmbeddings(
+            model="text-embedding-v4",
+            openai_api_key=Config.API_KEY,
+            openai_api_base=Config.BASE_URL,
+            check_embedding_ctx_length=False                                    #关闭长度检查，避免库版本报错
         )
-        print(Fore.GREEN + "OllamaEmbeddings构建完成" + Style.RESET_ALL)
+        print(Fore.GREEN + "embeddings_cloud构建完成" + Style.RESET_ALL)
         self.schema_file_path_4generate = schema_file_path              #用于_extract_schema_from_db(self) -> Dict
-        print(Fore.GREEN + "(在SchemaRetriver中)schema_file_path_4generate: " + self.schema_file_path_4generate + Style.RESET_ALL)
+        print(Fore.GREEN + "schema_file_path_4generate: " + self.schema_file_path_4generate + Style.RESET_ALL)
         self.schema_data = self._load_schema(schema_file_path)
-        print(Fore.GREEN + "schema_data加载完成: schema_data[0][table_name] = " +self.schema_data[0]["table_name"]+ Style.RESET_ALL)
+        print(Fore.GREEN + "schema_data加载完成"+ Style.RESET_ALL)
         self.index = None
         self.schema_texts = []
         self._build_index()
@@ -68,14 +74,14 @@ class SchemaRetriever:
                 print(Fore.BLUE+"使用embedding cache和FAISS cache"+Style.RESET_ALL)
 
         else:
-            print(Fore.BLUE+"未找到缓存，调用 Ollama 生成 embedding..."+Style.RESET_ALL)
+            print(Fore.BLUE+"未找到缓存，调用 embedding_cloud 生成 embedding..."+Style.RESET_ALL)
             texts = [item['text'] for item in self.schema_texts]            #生成嵌入向量
             batch_size = 10
             embedding = []
             with tqdm(total=len(texts)) as pbar:
                 for i in range(0, len(texts), batch_size):
                     batch = texts[i:i + batch_size]
-                    batch_embeddings = self.embeddings.embed_documents(batch)
+                    batch_embeddings = self.embeddings_cloud.embed_documents(batch)
                     embedding.extend(batch_embeddings)
                     pbar.update(batch_size)
             print(Fore.GREEN + "embedding end" + Style.RESET_ALL)
@@ -88,14 +94,14 @@ class SchemaRetriever:
             np.save(embd_cache_file_path, embedding)                        #持久化保存到磁盘
             faiss.write_index(self.index, faiss_cache_file_path)
 
-    def retrieve(self, question: str, top_k: int = 3) -> str:
+    def retrieve(self, question: str, top_k: int = 5) -> str:
         """
         检索相关Schema
         :param question: 问题
         :param top_k: 找出最近的top_k
         :return:
         """
-        query_embedding = self.embeddings.embed_query(question)
+        query_embedding = self.embeddings_cloud.embed_query(question)
         query_array = np.array([query_embedding]).astype('float32')
 
         distances, indices = self.index.search(query_array, top_k)
