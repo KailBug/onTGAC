@@ -1,6 +1,5 @@
 import re
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import OllamaLLM
 from langgraph.graph import StateGraph
 from langchain_openai import ChatOpenAI
 from colorama import Fore, Style
