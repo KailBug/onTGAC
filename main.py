@@ -258,7 +258,7 @@ class execute_sql_with_pymysql:
 if __name__ == '__main__':
 
     #模式变量 INSERT、 EXECUTE、 OTHER
-    MODE  = "OTHER"
+    MODE  = ""
 
     sql_executor = execute_sql_with_pymysql()
     db_configuration = {
@@ -270,25 +270,21 @@ if __name__ == '__main__':
     }
 
     if MODE == "INSERT":
-        # 执行插入操作
         print("执行插入操作")
         insert_file_path = "insert/insert_sql.json"
         insert_result_file_path = "insert/insert_result.json"
         sql_executor.insert_data_with_pymysql(insert_file_path, insert_result_file_path, db_config=db_configuration)
     elif MODE == "EXECUTE":
-        # 执行查询操作
         print("执行查询操作")
         dataset_file_path = "data/final_dataset_with_mapping.json"
         dataset_result_file_path = "胡辣汤/dataset_exe_result.json"
         sql_executor.execute_sql_with_pymysql(dataset_file_path, dataset_result_file_path, db_config=db_configuration)
     elif MODE == "OTHER":
-        #自定义操作
         print(Fore.GREEN+'执行自定义功能'+Style.RESET_ALL)
         schema_file_path = "data/schema.json"
-        print(Fore.GREEN + schema_file_path + Style.RESET_ALL)
         Mapping = Mapping(schema_file_path)
         input_file_path = "data/final_dataset_pure.json"
         output_file_path = "data/final_dataset_with_mapping.json"
         Mapping.trans_final_mapping(input_file_path, output_file_path)
     else:
-        print("未指定MODE: INSERT、 EXECUTE or OTHER.")
+        print("未指定工作模式: INSERT、 EXECUTE or OTHER.")
