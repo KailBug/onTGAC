@@ -20,8 +20,8 @@ class Text2SQLAgent:
         # )
         self.llm_cloud = ChatOpenAI(
             model="qwen3-coder-480b-a35b-instruct",
-            openai_api_key=Config.API_KEY,
-            openai_api_base=Config.BASE_URL,
+            openai_api_key=Config.QWEN_API_KEY,
+            openai_api_base=Config.QWEN_BASE_URL,
             temperature=0,
             #max_tokens=4096,
             timeout=60,                                 #设置云端超时限制，防止网络问题等待
