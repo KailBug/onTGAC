@@ -4,15 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # QWEN_MODEL = "qwen3-coder:30b"              #Ollama模型名称
-    # EMBEDDING_MODEL = "qwen3-embedding:8b"        #用于向量检索的嵌入模型
-    # OLLAMA_BASE_URL = "http://localhost:11434"
-    # EMBEDDING_URL = f"{OLLAMA_BASE_URL}/api/embeddings"
-    # GENERATE_URL = f"{OLLAMA_BASE_URL}/api/generate"
-
-    API_KEY = os.getenv("DASHSCOPE_API_KEY")
-    BASE_URL = os.getenv("DASHSCOPE_BASE_URL")
-
+    QWEN_API_KEY = os.getenv("DASHSCOPE_API_KEY")
+    QWEN_BASE_URL = os.getenv("DASHSCOPE_BASE_URL")
     #StarRocks数据库配置
     DB_CONFIG = {
         'host': 'localhost',    #数据库主机地址
@@ -21,10 +14,16 @@ class Config:
         'db': 'kail0',          #数据库名称_final_algorithm_competition
         'port': 9030            #starrocks访问端口
     }
-
+    #阿里官方text-embedding-v4模型向量化的batch_size大小
+    EMBEDDING_BATCH_SIZE = 10
     #记忆窗口大小
     MEMORY_WINDOW_SIZE = 3
-
+    #中间文件位置
+    DDL_embedding_cache_file_path: str = "data/DDL_embedding.npy"
+    DDL_faiss_index_cache_file_path: str = "data/DDL_index.faiss"
+    schemaddl_file_path: str = "data/schemaDDL.jsonl"
+    schemaddl_index_file_path: str = "data/schemaDDLindex.jsonl"
+    schemaddl_mapping_file_path: str = "data/schemaDDLmapping.json"
     #Few-shot示例
     FEW_SHOT_EXAMPLES = [
         {
