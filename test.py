@@ -4,7 +4,7 @@ import os
 from core.config import Config
 
 #阿里云 API Key
-api_key =  Config.API_KEY
+api_key =  Config.QWEN_API_KEY
 
 client = OpenAI(
     api_key=api_key,
