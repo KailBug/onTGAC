@@ -266,21 +266,22 @@ if __name__ == '__main__':
         'user': 'root',                         # 数据库用户名
         'password': '',                         # 数据库密码
         'db': 'kail0',                          # 数据库名称_final_algorithm_competition
-        'port': 9030                            # starrocks访问端口
+        'port': 9030,                           # starrocks访问端口
+        'charset': 'utf8mb4'
     }
 
     if MODE == "INSERT":
-        print("执行插入操作")
+        print("数据插入")
         insert_file_path = "insert/insert_sql.json"
         insert_result_file_path = "insert/insert_result.json"
         sql_executor.insert_data_with_pymysql(insert_file_path, insert_result_file_path, db_config=db_configuration)
     elif MODE == "EXECUTE":
-        print("执行查询操作")
+        print("执行SQL")
         dataset_file_path = "data/final_dataset_with_mapping.json"
         dataset_result_file_path = "胡辣汤/dataset_exe_result.json"
         sql_executor.execute_sql_with_pymysql(dataset_file_path, dataset_result_file_path, db_config=db_configuration)
     elif MODE == "OTHER":
-        print(Fore.GREEN+'执行自定义功能'+Style.RESET_ALL)
+        print(Fore.GREEN+'自定义'+Style.RESET_ALL)
         schema_file_path = "data/schema.json"
         Mapping = Mapping(schema_file_path)
         input_file_path = "data/final_dataset_pure.json"
