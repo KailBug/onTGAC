@@ -1,4 +1,6 @@
 import re
+import dashscope
+from dashscope import Generation
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph
 from langchain_openai import ChatOpenAI
@@ -6,18 +8,13 @@ from colorama import Fore, Style
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from core.config import Config
-from core.schema_retriever import SchemaRetriever
-from core.conversation_memory import ConversationMemory
-from core.agent_state import AgentState
+from core.schemaRetriever import SchemaRetriever
+from core.chatMemory import ChatMemory
+from core.agentState import AgentState
 
-class Text2SQLAgent:
+class Agent:
     """Agent节点定义"""
     def __init__(self,schema_file_path: str):
-        # self.llm = OllamaLLM(
-        #     model=Config.QWEN_MODEL,
-        #     base_url=Config.OLLAMA_BASE_URL,
-        #     temperature=0.1
-        # )
         self.llm_cloud = ChatOpenAI(
             model="qwen3-coder-480b-a35b-instruct",
             openai_api_key=Config.QWEN_API_KEY,
@@ -26,26 +23,24 @@ class Text2SQLAgent:
             #max_tokens=4096,
             timeout=60,                                 #设置云端超时限制，防止网络问题等待
         )
-        print(Fore.GREEN + "llm_cloud构建完成" + Style.RESET_ALL)
+
         self.schema_retriever = SchemaRetriever(schema_file_path)
-        print(Fore.GREEN + "SchemaRetriever构建完成" + Style.RESET_ALL)
-        self.memory = ConversationMemory()
-        print(Fore.GREEN + "ConversationMemory构建完成" + Style.RESET_ALL)
+        self.memory = ChatMemory()
         self.react_prompt = PromptTemplate(
             input_variables=["question", "schema", "few_shot_examples", "history"],
-            template="""你是一位精通 StarRocks 3.1 数据库的首席数据架构师。你的任务是将用户的自然语言问题转换为精确、高效的 SQL 查询。
+            template="""你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师。你的任务是将用户的自然语言问题转换为精确、高效的 SQL 查询。
 
-                    ### 1. 数据库 Schema 信息
+                    ### 1. 当前任务
+                    用户问题: {question}
+                    
+                    ### 2. 数据库 Schema 信息
                     {schema}
             
-                    ### 2. 参考示例 (Few-shot)
+                    ### 3. 参考示例 (Few-shot)
                     {few_shot_examples}
             
-                    ### 3. 对话上下文
-                    {history}
-            
-                    ### 4. 当前任务
-                    用户问题: {question}
+                    ### 4. 对话上下文
+                    {history}                    
             
                     ### 5. 核心指令 (必须严格遵守)
                     1. **方言兼容**: 使用 StarRocks 3.1 语法（高度兼容 MySQL 协议）。注意日期函数的使用（如 `date_trunc`, `str_to_date` 等）需符合 StarRocks 规范。
@@ -60,26 +55,6 @@ class Text2SQLAgent:
             
                     思考: [这里进行思维链推导：1.识别涉及的表和字段 -> 2.确定连接条件(JOIN) -> 3.确定筛选条件(WHERE) -> 4.确定聚合方式(GROUP BY)]
                     SQL: [这里仅输出最终的 SQL 语句]
-                    """
-        )
-
-        self.fix_prompt = PromptTemplate(
-            input_variables=["sql", "error", "schema", "suggestion"],
-            template="""之前生成的SQL执行出错,需要修复。
-
-                    原SQL: {sql}
-                    
-                    错误信息: {error}
-                    
-                    修复建议: {suggestion}
-                    
-                    数据库Schema:
-                    {schema}
-                    
-                    请生成修复后的SQL:
-                    
-                    思考: [分析错误原因]
-                    SQL: [修复后的SQL语句]
                     """
         )
     @staticmethod
@@ -98,7 +73,7 @@ class Text2SQLAgent:
             #如果模型忘了写 'SQL:'，尝试找常见的 SQL 关键字
             sql_content = llm_response.strip()
 
-        #清理可能残留的 Markdown,别再生成```sql了，尊敬的LLM大人
+        #清理可能残留的 Markdown,别再生成```sql了，尊敬的LLM大人...
         sql_content = sql_content.replace("```sql", "").replace("```", "").strip()
 
         # 清理行尾可能多余的解释性文字
