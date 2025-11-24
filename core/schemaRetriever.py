@@ -9,6 +9,7 @@ from typing import List, Dict
 from colorama import Fore, Style
 from langchain_core.prompts import PromptTemplate
 from http import HTTPStatus
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from core.config import Config
 from core.schema2DDL import Schema2DDL
@@ -78,6 +79,7 @@ class SchemaRetriever:
                     }
                     """
         )
+        print(Fore.GREEN + "SchemaRetriever.__init__完成" + Style.RESET_ALL)
 
     def _load_schema(self, schema_file_path: str) -> List[Dict]:
         """加载schema.json"""
@@ -181,6 +183,14 @@ class SchemaRetriever:
             full_query = question
         return full_query
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+    def _call_LLM(self):
+        return Generation.call(
+                model='qwen-max',  # 或'qwen-plus'，kimi-k2
+                messages={'role': 'user', 'content': self.rerank_prompt},
+                result_format='message',  # 使用 message 格式
+        )
+
     def rerank(self, item: dict, top_k: int) -> list:
         '''
         精排，使用MODEL，进行精确性检查，带有纠察机制
@@ -199,12 +209,7 @@ class SchemaRetriever:
             table_list = self.recalled_data
         )
 
-        response = Generation.call(
-            model='qwen-max',  # 或'qwen-plus'，kimi-k2
-            messages={'role': 'user', 'content': self.rerank_prompt},
-            result_format='message',  # 使用 message 格式
-            api_key="YOUR_DASHSCOPE_API_KEY"
-        )
+        response = self._call_LLM()
 
         if response.status_code == HTTPStatus.OK:
             content = response.output.choices[0].message.content
