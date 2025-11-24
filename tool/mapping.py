@@ -2,8 +2,8 @@ import json
 import traceback
 from colorama import Fore, Style
 
-from core.text2sql_agent import Text2SQLAgent
-from core.agent_state import AgentState
+from core.agent import Agent
+from core.agentState import AgentState
 
 #打分前的最后一步,将题目映射为SQL，并保存到final_dataset_with_mapping.json
 class Mapping:
@@ -18,7 +18,7 @@ class Mapping:
         :return: 无返回值
         """
         print(Fore.GREEN + "进入trans_final_mapping" + Style.RESET_ALL)
-        agent = Text2SQLAgent(self.schema_file_path)
+        agent = Agent(self.schema_file_path)
         print(Fore.GREEN + "Agent构建完成" + Style.RESET_ALL)
         graph = agent.build_graph()
         print(Fore.GREEN + "Graph构建完成" + Style.RESET_ALL)
