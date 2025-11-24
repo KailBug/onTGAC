@@ -39,7 +39,7 @@ class DecimalEncoder(json.JSONEncoder):
         # 其他类型使用父类的默认处理方式
         return super().default(obj)
 
-class execute_sql_with_pymysql:
+class SQLExecutor:
     """
     SQL执行器类，用于通过pymysql连接MySQL数据库并执行SQL语句。
     """
