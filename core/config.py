@@ -4,15 +4,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
+    def __init__(self):
+        pass
+    #alibaba-llm配置
     QWEN_API_KEY = os.getenv("DASHSCOPE_API_KEY")
     QWEN_BASE_URL = os.getenv("DASHSCOPE_BASE_URL")
+    #moonshot-llm配置
+    KIMI_API_KEY = os.getenv("MOONSHOT_API_KEY")
+    KIMI_BASE_URL = os.getenv("MOONSHOT_BASE_URL")
     #StarRocks数据库配置
     DB_CONFIG = {
-        'host': 'localhost',    #数据库主机地址
-        'user': 'root',         #数据库用户名
-        'password': '',         #数据库密码
-        'db': 'kail0',          #数据库名称_final_algorithm_competition
-        'port': 9030            #starrocks访问端口
+        'host': 'localhost',                    # 数据库主机地址
+        'user': 'root',                         # 数据库用户名
+        'password': '',                         # 数据库密码
+        'db': 'kail0',                          # 数据库名称_final_algorithm_competition
+        'port': 9030,                           # starrocks访问端口
+        'charset': 'utf8mb4'
     }
     #阿里官方text-embedding-v4模型向量化的batch_size大小
     EMBEDDING_BATCH_SIZE = 10
