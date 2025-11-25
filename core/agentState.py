@@ -3,6 +3,9 @@ from typing import TypedDict, Dict, Annotated, List, NotRequired
 class AgentState(TypedDict):
     sql_id: str  # id,初始化数据
     query: str  # 原始问题,初始化数据
+    table_list: list #json中的table_list，初始化数据
+    knowledge: str  # json中原始knowledge，初始化更新
+    复杂度: str #json中原始数据，初始化更新
     schema: list  # 检索到的Schema,rerank时更新
     knowledge_rules: str  #相关知识,初始化数据,rerank时更新
     thinking: NotRequired[str]  # 当前思考
