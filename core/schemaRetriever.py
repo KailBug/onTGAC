@@ -168,9 +168,9 @@ class SchemaRetriever:
 
         return recalled_candidates
 
-    def _build_query(self, item: dict)->str:
+    def _build_query(self, state: AgentState)->str:
         # 获取基础问题，去除首尾空白
-        question = item.get('query', '').strip()
+        question = state.get('query', '').strip()
         # 获取业务知识 (External Knowledge)
         knowledge = self.knowledge_in_rules
         # 构建组合 Query
@@ -191,7 +191,7 @@ class SchemaRetriever:
                 result_format='message',  # 使用 message 格式
         )
 
-    def _rerank(self, item:dict, top_k: int) -> list:
+    def _rerank(self, top_k: int) -> list:
         '''
         精排，使用MODEL，进行精确性检查，带有纠察机制
         :param item: final_dataset_pure.json中的单个json项
@@ -199,13 +199,13 @@ class SchemaRetriever:
         :return:
         '''
         final_schema = []
-        self.knowledge_in_rules = Knowledge2Rule.build(item)
-        query: str = self._build_query(item)
+        self.knowledge_in_rules = Knowledge2Rule.build(self.state)
+        query: str = self._build_query(self.state)
         self.recalled_data = self._recall(query)
         self.rerank_prompt.format(
             query=query,
             knowledge_in_rules=self.knowledge_in_rules,
-            question_table_list=item["table_list"],
+            question_table_list=self.state["table_list"],
             table_list = self.recalled_data,
             top_k=top_k
         )
@@ -230,9 +230,9 @@ class SchemaRetriever:
         else:
             print(f"{Fore.RED}API 调用失败: {response.code} - {response.message}{Style.RESET_ALL}")
             return []
-    def build(self, item:dict)->AgentState:
+    def build(self)->AgentState:
         #item表示final_dataset_pure.json中的单个json项
         #更新state
         self.state["knowledge_rules"] = self.knowledge_in_rules
-        self.state["schema"] = self._rerank(item=item, top_k=5)
+        self.state["schema"] = self._rerank(top_k=5)
         return self.state
