@@ -3,6 +3,7 @@ from colorama import Fore, Style
 from core.agentState import AgentState
 from core.config import Config
 
+#暂时不采用
 class ChatMemory:
     """管理对话历史,保留最近N轮"""
     def __init__(self):
