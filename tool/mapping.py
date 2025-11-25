@@ -9,7 +9,7 @@ from core.agentState import AgentState
 class Mapping:
     def __init__(self,schema_file_path: str):
         self.schema_file_path = schema_file_path
-        print(Fore.GREEN + self.schema_file_path + " - Mapping 构建完成" + Style.RESET_ALL)
+
     def trans_final_mapping(self, input_file_path:str, output_file_path:str):
         """
         对final_dataset_pure.json使用该方法，将一个个问题映射为SQL语句，并存储到final_dataset_with_mapping.json.
@@ -17,45 +17,49 @@ class Mapping:
         :param output_file_path: final_dataset_with_mapping.json
         :return: 无返回值
         """
-        print(Fore.GREEN + "进入trans_final_mapping" + Style.RESET_ALL)
+
         agent = Agent(self.schema_file_path)
-        print(Fore.GREEN + "Agent构建完成" + Style.RESET_ALL)
+
         graph = agent.build_graph()
-        print(Fore.GREEN + "Graph构建完成" + Style.RESET_ALL)
         questions_data_mapping = []
 
         with open(input_file_path, "r", encoding="utf-8") as f:
             questions_data = json.load(f)
-            print(f"{Fore.GREEN}加载question_data: len(question_data) = {len(questions_data)}{Style.RESET_ALL}")
 
         for index, item in enumerate(questions_data, 1):
-            sql_id  = item.get("sql_id","sql_id_error")
-            question = item.get("question", "question_error")
+            sql_id  = item.get("sql_id")
+            question = item.get("question")
             print(f"\n[{index}/{len(questions_data)} {sql_id}] Question: {question}")
 
             initial_state:AgentState = {
-                "question": question,
-                "schema":"",
-                "thinking":"",
-                "action":"",
-                "sql":"",
-                "execution_result":{},
-                "error_count":0,
-                "final_sql":"",
-                "conversation_history":[]
+                "sql_id": item.get("sql_id"),  # id,初始化数据
+                "query": item.get("question"),  # 原始问题,初始化数据
+                "table_list": item.get("table_list"),  # json中的table_list，初始化数据
+                "knowledge": item.get("knowledge"), # json中原始knowledge，初始化更新
+                "复杂度": item.get("复杂度"),  # json中原始数据，初始化更新
+                "schema": "",  # 检索到的Schema,rerank时更新
+                "knowledge_rules": "",  # 相关知识,初始化数据,rerank时更新
+                "thinking": "",  # 当前思考
+                "action": "",  # 最近执行动作(generate_sql/execute_sql/fix_sql),node中更新
+                "sql_state": "",  # success 或者 error,执行时更新
+                "current_sql": "",  # 生成的SQL,refiner时更新
+                "error_msg": "",  # 执行错误信息,执行时更新
+                "execution_result": {},  # 执行结果
+                "error_count": 0,  # 初始赋值为0,错误次数，当错误次数为3时停止,执行时更新
+                "final_sql": ""  # 最终SQL,执行时更新，refined后更新，暂时不用这个字段
             }
             try:
                 final_state = graph.invoke(initial_state)
-                sql = final_state.get("sql","")
+                sql = final_state.get("sql")
                 print(Fore.GREEN+f"生成SQL: {sql}"+Style.RESET_ALL)
 
                 questions_data_mapping.append({
                     "sql_id":sql_id,
                     "question":question,
                     "sql":sql,
-                    "复杂度":item.get("复杂度","复杂度_error"),
-                    "table_list":item.get("table_list","table_list_error"),
-                    "knowledge":item.get("knowledge","knowledge_error")
+                    "复杂度":item.get("复杂度"),
+                    "table_list":item.get("table_list"),
+                    "knowledge":item.get("knowledge")
                 })
             except Exception as e:
                 print(Fore.RED + f"处理错误: {str(e)}" + Style.RESET_ALL)
@@ -69,9 +73,9 @@ class Mapping:
                     "sql_id": sql_id,
                     "question": question,
                     "sql": "",
-                    "复杂度": item.get("复杂度","复杂度_error"),
-                    "table_list": item.get("table_list","table_list_error"),
-                    "knowledge": item.get("knowledge","knowledge_error")
+                    "复杂度": item.get("复杂度"),
+                    "table_list": item.get("table_list"),
+                    "knowledge": item.get("knowledge")
                 })
 
 
