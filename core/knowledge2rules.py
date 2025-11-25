@@ -1,11 +1,13 @@
 import re
 
+from core.agentState import AgentState
+
 class Knowledge2Rule:
     def __init__(self):
         pass
-    def build(self, item: dict) -> str:
+    def build(self, state: AgentState) -> str:
         """处理 item 中的 knowledge 字段，将其格式化为清晰的 If... Then... 规则。"""
-        knowledge_raw = item.get("knowledge", "")
+        knowledge_raw = state.get("knowledge", "")
 
         # 判空处理：如果没有知识，返回空字符串或默认提示
         if not knowledge_raw or not knowledge_raw.strip():
