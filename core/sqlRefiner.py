@@ -20,11 +20,11 @@ class SQLRefiner:
         """
         self.state = state
         self.fix_prompt = self._generate_fix_prompt(
-                                question=self.state.query,
-                                schema_info=self.state.schema,
-                                error_msg=self.state.error_msg,
-                                wrong_sql=self.state.current_sql,
-                                knowledge=self.state.knowledge
+                                question=self.state.get("query"),
+                                schema_info=self.state.get("schema"),
+                                error_msg=self.state.get("error_msg"),
+                                wrong_sql=self.state.get("current_sql"),
+                                knowledge=self.state.get("knowledge_rules")
         )
         self.fix_system_prompt = """
             你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师,给用户生成的SQL查询执行错误，
@@ -38,7 +38,7 @@ class SQLRefiner:
             {
                 "role": "user",
                 "content": f"{self.fix_prompt}",
-            },
+            }
         ]
         self.response = None
 
@@ -113,5 +113,6 @@ class SQLRefiner:
     def build(self)->AgentState:
         self._call_LLM()
         current_sql = self._parse_output(self.response)
+        #更新state
         self.state.current_sql = current_sql
         return self.state
