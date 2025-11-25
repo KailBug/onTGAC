@@ -15,24 +15,26 @@ from core.config import Config
 from core.schema2DDL import Schema2DDL
 from core.embedding import EmbeddingDDL
 from core.knowledge2rules import Knowledge2Rule
+from core.agentState import AgentState
 
 dashscope.api_key = Config.QWEN_API_KEY
 
 class SchemaRetriever:
     """向量检索相关表和字段"""
-    def __init__(self, schema_file_path: str):
+    def __init__(self, state: AgentState, schema_file_path: str):
         """
         :param schema_file_path:保存schema.json文件的路径
         """
+        self.state = state
         self.schema_data = self._load_schema(schema_file_path)
         self.index = None
         self.recalled_data:list[dict] = []
         self._build_index()
         self.rerank_prompt = PromptTemplate(
-            input_variables=["query","knowledge_in_rules","question_table_list","recalled_data"],
+            input_variables=["query","question_table_list","recalled_data","top_k"],
             template="""
                     你是一个专业的数据库管理员和 SQL 专家，你的工作环境使用starrocks/allin1-ubuntu:2.5.12。
-                    你的任务是根据用户的自然语言问题，从给定的候选数据表中筛选出**真正需要**使用的表。
+                    你的任务是根据用户的自然语言问题，从给定的候选数据表中筛选出**真正需要**使用的{top_k}张表。
                     
                     **任务要求：**
                     1. 仔细阅读用户的查询和提供的候选表结构（DDL）。
@@ -42,9 +44,6 @@ class SchemaRetriever:
                     
                     **用户问题：**
                     {query}
-                    
-                    **用户问题相关知识：**
-                    {knowledge_in_rules}
                     
                     **用户问题相关表格：**
                     {question_table_list}
@@ -79,6 +78,7 @@ class SchemaRetriever:
                     }
                     """
         )
+        self.knowledge_in_rules = None
         print(Fore.GREEN + "SchemaRetriever.__init__完成" + Style.RESET_ALL)
 
     def _load_schema(self, schema_file_path: str) -> List[Dict]:
@@ -170,9 +170,9 @@ class SchemaRetriever:
 
     def _build_query(self, item: dict)->str:
         # 获取基础问题，去除首尾空白
-        question = item.get('question', '').strip()
+        question = item.get('query', '').strip()
         # 获取业务知识 (External Knowledge)
-        knowledge = item.get('knowledge', '').strip()
+        knowledge = self.knowledge_in_rules
         # 构建组合 Query
         # 如果有 knowledge，将其作为补充信息拼接到问题后面
         # 使用分隔符或标签让 Embedding 模型理解这是上下文补充
@@ -191,22 +191,23 @@ class SchemaRetriever:
                 result_format='message',  # 使用 message 格式
         )
 
-    def rerank(self, item: dict, top_k: int) -> list:
+    def _rerank(self, item:dict, top_k: int) -> list:
         '''
         精排，使用MODEL，进行精确性检查，带有纠察机制
-        :param item: 整个sql问题
+        :param item: final_dataset_pure.json中的单个json项
         :param top_k:精排数量
         :return:
         '''
         final_schema = []
+        self.knowledge_in_rules = Knowledge2Rule.build(item)
         query: str = self._build_query(item)
         self.recalled_data = self._recall(query)
-        knowledge_in_rules = Knowledge2Rule.build(item)
         self.rerank_prompt.format(
             query=query,
-            knowledge_in_rules=knowledge_in_rules,
+            knowledge_in_rules=self.knowledge_in_rules,
             question_table_list=item["table_list"],
-            table_list = self.recalled_data
+            table_list = self.recalled_data,
+            top_k=top_k
         )
 
         response = self._call_LLM()
@@ -229,3 +230,9 @@ class SchemaRetriever:
         else:
             print(f"{Fore.RED}API 调用失败: {response.code} - {response.message}{Style.RESET_ALL}")
             return []
+    def build(self, item:dict)->AgentState:
+        #item表示final_dataset_pure.json中的单个json项
+        #更新state
+        self.state["knowledge_rules"] = self.knowledge_in_rules
+        self.state["schema"] = self._rerank(item=item, top_k=5)
+        return self.state
