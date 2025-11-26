@@ -11,10 +11,13 @@ class Agent:
     """Agent节点定义"""
     def __init__(self,schema_file_path: str):
         self.schema_file_path = schema_file_path
+        self.schemaRetriever = SchemaRetriever(schema_file_path=self.schema_file_path)
 
     def schema_retrieve_node(self, state: AgentState) -> AgentState:
-        schemaRetriever = SchemaRetriever(schema_file_path=self.schema_file_path, state=state)
-        state = schemaRetriever.build()
+        schemaRetriever = self.schemaRetriever
+        knowledge_rules, schema = schemaRetriever.build(state=state)
+        state["knowledge_rules"] = knowledge_rules
+        state["schema"] = schema
         return state
 
     def sql_generate_node(self, state: AgentState) -> AgentState:

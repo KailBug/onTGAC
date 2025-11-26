@@ -4,7 +4,6 @@ from decimal import Decimal
 from datetime import datetime, date
 from pathlib import Path
 from typing import List, Dict
-from colorama import  Fore, Style
 
 from tool.mapping import Mapping
 

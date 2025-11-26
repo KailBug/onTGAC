@@ -50,7 +50,7 @@ class Mapping:
             try:
                 final_state = graph.invoke(initial_state)
                 sql = final_state.get("current_sql")
-                print(Fore.GREEN+f"生成SQL: {sql}"+Style.RESET_ALL)
+                print(Fore.GREEN+f"最后的生成SQL: {sql}"+Style.RESET_ALL)
 
                 questions_data_mapping.append({
                     "sql_id":sql_id,
@@ -82,4 +82,4 @@ class Mapping:
         with open(output_file_path, "w", encoding="utf-8") as f:
             json.dump(questions_data_mapping, f, ensure_ascii=False, indent=4)
 
-        print(Fore.GREEN+f"\n处理结束，结果已保存到: {output_file_path}\n"+Style.RESET_ALL)
+        print(Fore.GREEN+f"\nText2SQL 处理结束，结果已保存到: {output_file_path}\n"+Style.RESET_ALL)

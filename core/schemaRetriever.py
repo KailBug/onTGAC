@@ -22,11 +22,10 @@ dashscope.api_key = Config.QWEN_API_KEY
 
 class SchemaRetriever:
     """向量检索相关表和字段"""
-    def __init__(self, state: AgentState, schema_file_path: str):
+    def __init__(self,  schema_file_path: str):
         """
         :param schema_file_path:保存schema.json文件的路径
         """
-        self.state = state
         self.schema_data = self._load_schema(schema_file_path)
         self.index = None
         self.recalled_data:list[dict] = []
@@ -189,23 +188,24 @@ class SchemaRetriever:
                 result_format='message',  # 使用 message 格式
         )
 
-    def _rerank(self, top_k: int) -> list:
+    #需要self.state
+    def _rerank(self,state:AgentState ,top_k: int) -> list:
         '''
         精排，使用MODEL，进行精确性检查，带有纠察机制
-        :param item: final_dataset_pure.json中的单个json项
+        :param state: 包含final_dataset_pure.json中的单个json项
         :param top_k:精排数量
         :return:
         '''
         final_schema = []
         knowledge2rule = Knowledge2Rule()
-        self.knowledge_in_rules = knowledge2rule.build(self.state)
-        query: str = self._build_query(self.state)
+        self.knowledge_in_rules = knowledge2rule.build(state)
+        query: str = self._build_query(state)
         self.recalled_data = self._recall(query)
         recalled_data_texts = self._get_recalled_data_texts()
         self.rerank_prompt = self._get_rerank_prompt_str(
             query=query,
             knowledge_in_rules=self.knowledge_in_rules,
-            question_table_list=self.state["table_list"],
+            question_table_list=state["table_list"],
             recalled_data_texts=recalled_data_texts,
             top_k=top_k
         )
@@ -238,9 +238,9 @@ class SchemaRetriever:
         else:
             print(f"{Fore.RED}API 调用失败: {response.code} - {response.message}{Style.RESET_ALL}")
             return []
-    def build(self)->AgentState:
+    def build(self, state: AgentState):
         #item表示final_dataset_pure.json中的单个json项
         #更新state
-        self.state["knowledge_rules"] = self.knowledge_in_rules
-        self.state["schema"] = self._rerank(top_k=5)
-        return self.state
+        knowledge_rules = self.knowledge_in_rules
+        schema = self._rerank(state=state,top_k=5)
+        return knowledge_rules, schema
