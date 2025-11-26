@@ -10,6 +10,7 @@ import pymysql
 from decimal import Decimal
 from datetime import datetime, date
 from typing import Dict, List
+from colorama import Fore, Style
 
 from core.agentState import AgentState
 from core.config import Config
@@ -51,6 +52,7 @@ class SQLExecutor:
     def __init__(self, state:AgentState):
         self.state = state
         self.ret = None
+        print(Fore.GREEN + "SQLExecutor.__init__完成" + Style.RESET_ALL)
 
     def _normalize_numbers_in_result(self, result_list: List[Dict]) -> List[Dict]:
         """

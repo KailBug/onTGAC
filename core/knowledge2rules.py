@@ -47,11 +47,11 @@ class Knowledge2Rule:
         elif not rules_found:
             # Fallback: 如果全文没有发现任何 "标题：" 结构，则将整段作为一个通用规则
             # 这种情况通常是通用过滤条件
-            rule_text = self._format_single_rule("the question involves domain knowledge", lines)
+            rule_text = self._format_single_rule("这个问题涉及的领域知识", lines)
             formatted_rules.append(rule_text)
 
         # 拼接最终输出，添加一些 Prompt Header 让 LLM 更重视
-        final_output = "Reference the following External Knowledge rules:\n" + "\n".join(formatted_rules)
+        final_output = "参考以下外部知识规则:\n" + "\n".join(formatted_rules)
 
         return final_output
 

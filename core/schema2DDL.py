@@ -4,14 +4,13 @@ from colorama import Fore, Style
 from core.config import Config
 
 class Schema2DDL:
-    def __init__(self, schema_data:list[dict], schemaddl_file_path:str):
+    def __init__(self, schema_data:list[dict]):
         '''
         初始化
         :param schema_data: schema数据
         :param schemaddl_file_path: 保存DDL数据文件路径
         '''
         self.schema_data = schema_data
-        self.schemaddl_file_path = schemaddl_file_path
         self.schema_length = len(self.schema_data)
     def build(self):
         '''

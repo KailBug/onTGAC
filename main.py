@@ -258,7 +258,7 @@ class execute_sql_with_pymysql:
 if __name__ == '__main__':
 
     #模式变量 INSERT、 EXECUTE、 OTHER
-    MODE  = ""
+    MODE  = "OTHER"
 
     sql_executor = execute_sql_with_pymysql()
     db_configuration = {

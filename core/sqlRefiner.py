@@ -7,6 +7,7 @@ import re
 import dashscope
 from dashscope import Generation
 from tenacity import retry, stop_after_attempt, wait_fixed
+from colorama import Fore, Style
 
 from core.config import Config
 from core.agentState import AgentState
@@ -41,6 +42,7 @@ class SQLRefiner:
             }
         ]
         self.response = None
+        print(Fore.GREEN + "SQLRefiner.__init__完成" + Style.RESET_ALL)
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def _call_LLM(self):

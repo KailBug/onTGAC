@@ -1,4 +1,5 @@
 import json
+import sys
 import traceback
 from colorama import Fore, Style
 
@@ -77,6 +78,7 @@ class Mapping:
                     "table_list": item.get("table_list"),
                     "knowledge": item.get("knowledge")
                 })
+            sys.exit()
 
 
         with open(output_file_path, "w", encoding="utf-8") as f:
