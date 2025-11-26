@@ -4,6 +4,7 @@
 方案B:使用qwen-coder-plus + kimi-k2-thinking
 """
 import re
+from http import HTTPStatus
 import dashscope
 from dashscope import Generation
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -84,12 +85,30 @@ class SQLRefiner:
         """
         从模型输出中鲁棒地提取 SQL
         """
-        text = []
+        text = ""
+        # 1. 字符串情况 (Mock 或 已经提取过的内容)
         if isinstance(response, str):
             text = response
+        # 2. DashScope 响应对象情况
+        elif hasattr(response, 'status_code'):
+            if response.status_code == HTTPStatus.OK:
+                try:
+                    text = response.output.choices[0].message.content
+                except (AttributeError, KeyError, IndexError):
+                    # 如果返回结构不符合预期，降级为字符串
+                    text = str(response)
+            else:
+                # API 调用失败，打印日志并返回空字符串
+                code = getattr(response, 'code', 'Unknown')
+                msg = getattr(response, 'message', 'Unknown Error')
+                print(f"Refiner API Error: {code} - {msg}")
+                return ""  # 无法提取 SQL，直接返回空
+        # 3. 其他未知类型兜底
         else:
-            #text = response.output.choices[0].message.content
-            text = getattr(response, 'content', str(response))
+            text = str(response)
+        # 如果 text 为空，直接返回
+        if not text:
+            return ""
 
         # 尝试提取 'SQL:' 之后的内容
         pattern = r"SQL:\s*(.*)"
@@ -102,7 +121,7 @@ class SQLRefiner:
             # 如果模型忘了写 'SQL:'，尝试找常见的 SQL 关键字
             sql_content = text.strip()
 
-        # 清理可能残留的 Markdown,别再生成```sql了，尊敬的LLM大人...
+        # 清理可能残留的 Markdown,例如```sql
         sql_content = sql_content.replace("```sql", "").replace("```", "").strip()
 
         # 清理行尾可能多余的解释性文字
@@ -116,5 +135,5 @@ class SQLRefiner:
         self._call_LLM()
         current_sql = self._parse_output(self.response)
         #更新state
-        self.state.current_sql = current_sql
+        self.state["current_sql"] = current_sql
         return self.state

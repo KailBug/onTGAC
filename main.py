@@ -271,21 +271,18 @@ if __name__ == '__main__':
     }
 
     if MODE == "INSERT":
-        print("数据插入")
         insert_file_path = "insert/insert_sql.json"
         insert_result_file_path = "insert/insert_result.json"
         sql_executor.insert_data_with_pymysql(insert_file_path, insert_result_file_path, db_config=db_configuration)
     elif MODE == "EXECUTE":
-        print("执行SQL")
         dataset_file_path = "data/final_dataset_with_mapping.json"
         dataset_result_file_path = "胡辣汤/dataset_exe_result.json"
         sql_executor.execute_sql_with_pymysql(dataset_file_path, dataset_result_file_path, db_config=db_configuration)
     elif MODE == "OTHER":
-        print(Fore.GREEN+'自定义'+Style.RESET_ALL)
         schema_file_path = "data/schema.json"
         Mapping = Mapping(schema_file_path)
         input_file_path = "data/final_dataset_pure.json"
         output_file_path = "data/final_dataset_with_mapping.json"
         Mapping.trans_final_mapping(input_file_path, output_file_path)
     else:
-        print("未指定工作模式: INSERT、 EXECUTE or OTHER.")
+        print("未指定: INSERT、 EXECUTE or OTHER.")

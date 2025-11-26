@@ -7,6 +7,7 @@ import dashscope
 from dashscope import Generation
 from tenacity import retry, stop_after_attempt, wait_fixed
 from colorama import Fore, Style
+from http import HTTPStatus
 
 from core.config import Config
 from core.agentState import AgentState
@@ -56,7 +57,6 @@ class SQLGenerator:
 
         # 清理可能残留的 Markdown,别再生成```sql了，尊敬的LLM大人...
         sql_content = sql_content.replace("```sql", "").replace("```", "").strip()
-
         # 清理行尾可能多余的解释性文字
         # 这里假设 SQL 以分号结尾，取最后一个分号之前的内容
         if ";" in sql_content:
@@ -102,28 +102,42 @@ class SQLGenerator:
         )
 
     def build(self) -> AgentState:
-
+        # 1. 调用大模型
         self.response = self._call_LLM()
-
         sql = ""
         text = ""
+        # 2. 处理响应结果
         if isinstance(self.response, str):
+            # 如果 mock 或者某些特殊情况直接返回了字符串
             text = self.response
+        # 检查是否是 DashScope 的响应对象 (通常包含 status_code)
+        elif hasattr(self.response, 'status_code'):
+            if self.response.status_code == HTTPStatus.OK:
+                # 路径: response -> output -> choices列表 -> 第一个元素 -> message -> content
+                try:
+                    text = self.response.output.choices[0].message.content
+                except (AttributeError, IndexError, KeyError) as e:
+                    print(f"API返回结构异常: {e}")
+                    text = ""
+            else:
+                # 失败时，打印错误码和信息
+                code = getattr(self.response, 'code', 'Unknown')
+                msg = getattr(self.response, 'message', 'Unknown Error')
+                print(f"API调用失败: Code={code}, Message={msg}")
+                text = ""
         else:
-            text = getattr(self.response, 'content', str(self.response))
+            # 兜底逻辑：既不是字符串，也不是标准响应对象
+            text = str(self.response)
 
-        # 正则表达式，其实也能达到_parse_output()的效果
-        # match = re.search(r'(?i)sql[:：]\s*([\s\S]*?;)', text)
-        # if match:
-        #     sql = match.group(1).strip()
-        # else:
-        #     sql = ""
-        sql = self._parse_output(text)  # 使用静态解析器
+        # 3. 解析文本提取 SQL
+        # 增加一个非空判断，防止把空字符串传给解析器导致报错
+        if text:
+            sql = self._parse_output(text)
+        else:
+            print(f"{Fore.RED}警告: 模型输出为空或API出错，无法解析SQL{Style.RESET_ALL}")
+            sql = ""  # 或者设置为 "SELECT 1" 等 fallback SQL
 
-        #更新state
+        # 4. 更新 state
         self.state["current_sql"] = sql
 
-        # # 添加到对话历史
-        # self.memory.add_message(state, "user", state["question"])
-        # self.memory.add_message(state, "assistant", f"思考: {thinking}\nSQL: {sql}\n")
         return self.state

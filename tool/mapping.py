@@ -18,9 +18,7 @@ class Mapping:
         :param output_file_path: final_dataset_with_mapping.json
         :return: 无返回值
         """
-
         agent = Agent(self.schema_file_path)
-
         graph = agent.build_graph()
         questions_data_mapping = []
 
@@ -51,7 +49,7 @@ class Mapping:
             }
             try:
                 final_state = graph.invoke(initial_state)
-                sql = final_state.get("sql")
+                sql = final_state.get("current_sql")
                 print(Fore.GREEN+f"生成SQL: {sql}"+Style.RESET_ALL)
 
                 questions_data_mapping.append({
