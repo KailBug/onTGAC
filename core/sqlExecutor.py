@@ -49,8 +49,7 @@ class SQLExecutor:
     """
     SQL执行器类，用于通过pymysql连接MySQL数据库并执行SQL语句。
     """
-    def __init__(self, state:AgentState):
-        self.state = state
+    def __init__(self):
         self.ret = None
         print(Fore.GREEN + "SQLExecutor.__init__完成" + Style.RESET_ALL)
 
@@ -140,11 +139,16 @@ class SQLExecutor:
             if conn:
                 conn.close()
 
-    def build(self)->AgentState:
-        #更新state
-        self.ret = self._execute_sql_with_pymysql(self.state["current_sql"], Config.DB_CONFIG)
-        self.state["sql_state"] = self.ret["status"]
-        self.state["error_msg"] = self.ret.get("error_message","")
-        if self.state["sql_state"] in ["execute_error", "Unexpected_error"]:
-            self.state["error_count"] += 1
-        return self.state
+    def build(self, state:AgentState):
+        self.ret = self._execute_sql_with_pymysql(state["current_sql"], Config.DB_CONFIG)
+        error_count = state["error_count"]
+        sql_state = self.ret.get("status")
+        error_msg = self.ret.get("error_message","")
+        #打印
+        if sql_state in ["execute_error", "Unexpected_error"]:
+            error_count += 1
+            print(f"{Fore.RED}{self.ret.get("error_message")}{Style.RESET_ALL}")
+        if sql_state == "execute_success":
+            print(f"{Fore.GREEN}{self.ret.get("insert")}{Style.RESET_ALL}")
+        print(f"{Fore.BLUE}SQLExecutor.build(){Style.RESET_ALL}")
+        return sql_state, error_msg, error_count

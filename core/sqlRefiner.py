@@ -16,33 +16,16 @@ from core.agentState import AgentState
 dashscope.api_key = Config.QWEN_API_KEY
 
 class SQLRefiner:
-    def __init__(self,state:AgentState):
+    def __init__(self):
         """
         接收AgentState，提取错误的SQL让LLM生成新的SQL，更新AgentState返回
         """
-        self.state = state
-        self.fix_prompt = self._generate_fix_prompt(
-                                question=self.state.get("query"),
-                                schema_info=self.state.get("schema"),
-                                error_msg=self.state.get("error_msg"),
-                                wrong_sql=self.state.get("current_sql"),
-                                knowledge=self.state.get("knowledge_rules")
-        )
         self.fix_system_prompt = """
             你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师,给用户生成的SQL查询执行错误，
             你的任务是根据**错误消息**和**提供的正确表模式**修复SQL，得到一个正确的SQL。
         """
-        self.messages = messages=[
-            {
-                "role": "system",
-                "content": f"{self.fix_system_prompt}"
-            },
-            {
-                "role": "user",
-                "content": f"{self.fix_prompt}",
-            }
-        ]
         self.response = None
+        self.messages = None
         print(Fore.GREEN + "SQLRefiner.__init__完成" + Style.RESET_ALL)
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
@@ -131,9 +114,25 @@ class SQLRefiner:
 
         return sql_content
 
-    def build(self)->AgentState:
+    def build(self, state:AgentState):
+        fix_prompt = self._generate_fix_prompt(
+            question=state.get("query"),
+            schema_info=state.get("schema"),
+            error_msg=state.get("error_msg"),
+            wrong_sql=state.get("current_sql"),
+            knowledge=state.get("knowledge_rules")
+        )
+        self.messages = messages = [
+            {
+                "role": "system",
+                "content": f"{self.fix_system_prompt}"
+            },
+            {
+                "role": "user",
+                "content": f"{fix_prompt}",
+            }
+        ]
         self._call_LLM()
         current_sql = self._parse_output(self.response)
-        #更新state
-        self.state["current_sql"] = current_sql
-        return self.state
+        print(f"{Fore.BLUE}SQLRefiner.build(){Style.RESET_ALL}")
+        return current_sql

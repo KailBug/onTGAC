@@ -15,28 +15,13 @@ from core.agentState import AgentState
 dashscope.api_key = Config.QWEN_API_KEY
 
 class SQLGenerator:
-    def __init__(self, state: AgentState):
-        self.few_shot_examples = self._get_few_shot_examples()
-        self.state = state
-        self.user_prompt = self._generate_user_prompt(
-            question=self.state.get("query"),
-            schema=self.state.get("schema"),
-            knowledge=self.state.get("knowledge_rules"),
-            few_shot_examples=self.few_shot_examples
-        )
+    def __init__(self):
         self.system_prompt = """
             你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师。
             你的任务是将用户的自然语言问题转换为精确、高效的 SQL 查询。
             """
-        self.messages = [{
-                "role": "system",
-                "content": f"{self.system_prompt}"
-            },
-            {
-                "role": "user",
-                "content": f"{self.user_prompt}",
-            }]
         self.response = None
+        self.messages = None
         print(f"{Fore.GREEN}SQLGenerator.__init__完成{Style.RESET_ALL}")
 
     @staticmethod
@@ -101,7 +86,22 @@ class SQLGenerator:
             result_format="message"
         )
 
-    def build(self) -> AgentState:
+    def build(self, state:AgentState):
+        few_shot_examples = self._get_few_shot_examples()
+        user_prompt = self._generate_user_prompt(
+            question=state.get("query"),
+            schema=state.get("schema"),
+            knowledge=state.get("knowledge_rules"),
+            few_shot_examples=few_shot_examples
+        )
+        self.messages = [{
+            "role": "system",
+            "content": f"{self.system_prompt}"
+        },
+            {
+                "role": "user",
+                "content": f"{user_prompt}",
+            }]
         # 1. 调用大模型
         self.response = self._call_LLM()
         sql = ""
@@ -128,7 +128,6 @@ class SQLGenerator:
         else:
             # 兜底逻辑：既不是字符串，也不是标准响应对象
             text = str(self.response)
-
         # 3. 解析文本提取 SQL
         # 增加一个非空判断，防止把空字符串传给解析器导致报错
         if text:
@@ -136,8 +135,5 @@ class SQLGenerator:
         else:
             print(f"{Fore.RED}警告: 模型输出为空或API出错，无法解析SQL{Style.RESET_ALL}")
             sql = ""  # 或者设置为 "SELECT 1" 等 fallback SQL
-
-        # 4. 更新 state
-        self.state["current_sql"] = sql
-
-        return self.state
+        print(f"{Fore.BLUE}SQLGenerator.build(){Style.RESET_ALL}")
+        return sql

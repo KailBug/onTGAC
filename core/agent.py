@@ -12,30 +12,34 @@ class Agent:
     def __init__(self,schema_file_path: str):
         self.schema_file_path = schema_file_path
         self.schemaRetriever = SchemaRetriever(schema_file_path=self.schema_file_path)
-
+        self.sqlGenerator = SQLGenerator()
+        self.sqlExecutor = SQLExecutor()
+        self.sqlRefiner = SQLRefiner()
+    # 更新state
     def schema_retrieve_node(self, state: AgentState) -> AgentState:
-        schemaRetriever = self.schemaRetriever
-        knowledge_rules, schema = schemaRetriever.build(state=state)
+        knowledge_rules, schema = self.schemaRetriever.build(state=state)
         state["knowledge_rules"] = knowledge_rules
         state["schema"] = schema
         return state
-
+    # 更新state
     def sql_generate_node(self, state: AgentState) -> AgentState:
-        sqlGenerator = SQLGenerator(state=state)
-        state = sqlGenerator.build()
+        sql = self.sqlGenerator.build(state=state)
+        state["current_sql"] = sql
         return state
-
+    # 更新state
     def sql_execute_node(self, state: AgentState) -> AgentState:
-        sqlExecutor = SQLExecutor(state=state)
-        state = sqlExecutor.build()
+        sql_state, error_msg, error_count = self.sqlExecutor.build(state=state)
+        state["sql_state"] = sql_state
+        state["error_count"] = error_count
+        state["error_msg"] = error_msg
         return state
-
+    # 更新state
     def sql_refine_node(self, state: AgentState) -> AgentState:
-        sqlRefiner = SQLRefiner(state=state)
-        state = sqlRefiner.build()
+        sql = self.sqlRefiner.build(state=state)
+        state["current_sql"] = sql
         return state
-
-    def route_next(self, state: AgentState) -> str:
+    @staticmethod
+    def route_next(state: AgentState) -> str:
         error_count = state.get("error_count")
         sql_state = state.get("sql_state")
         # 优先级 1: 如果已经尝试了3次（或者当前是第3次失败），停止尝试

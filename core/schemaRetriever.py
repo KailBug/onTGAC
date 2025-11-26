@@ -8,7 +8,6 @@ from dashscope import TextEmbedding
 from dashscope import Generation
 from typing import List, Dict
 from colorama import Fore, Style
-from langchain_core.prompts import PromptTemplate
 from http import HTTPStatus
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -240,7 +239,7 @@ class SchemaRetriever:
             return []
     def build(self, state: AgentState):
         #item表示final_dataset_pure.json中的单个json项
-        #更新state
         knowledge_rules = self.knowledge_in_rules
         schema = self._rerank(state=state,top_k=5)
+        print(f"{Fore.BLUE}SchemaRetriever.build(){Style.RESET_ALL}")
         return knowledge_rules, schema

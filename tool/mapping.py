@@ -28,7 +28,8 @@ class Mapping:
         for index, item in enumerate(questions_data, 1):
             sql_id  = item.get("sql_id")
             question = item.get("question")
-            print(f"\n[{index}/{len(questions_data)} {sql_id}] Question: {question}")
+            level = item.get("复杂度")
+            print(f"\n[{index}/{len(questions_data)} {sql_id} {level}] Question: {question}")
 
             initial_state:AgentState = {
                 "sql_id": item.get("sql_id"),  # id,初始化数据
