@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 import faiss
 import numpy as np
 import dashscope
@@ -30,58 +31,12 @@ class SchemaRetriever:
         self.index = None
         self.recalled_data:list[dict] = []
         self._build_index()
-        self.rerank_prompt = PromptTemplate(
-            input_variables=["query","question_table_list","recalled_data","top_k"],
-            template="""
-                    你是一个专业的数据库管理员和 SQL 专家，你的工作环境使用starrocks/allin1-ubuntu:2.5.12。
-                    你的任务是根据用户的自然语言问题，从给定的候选数据表中筛选出**真正需要**使用的{top_k}张表。
-                    
-                    **任务要求：**
-                    1. 仔细阅读用户的查询和提供的候选表结构（DDL）。
-                    2. 分析每个表是否包含回答问题所需的列（注意查看列的 COMMENT 注释）。
-                    3. 如果一个表是多余的或与问题无关，请不要选择它。
-                    4. 就算表名看起来相关，如果缺少核心字段，也不要选择。
-                    
-                    **用户问题：**
-                    {query}
-                    
-                    **用户问题相关表格：**
-                    {question_table_list}
-                    
-                    **候选表结构：**
-                    table_name:{recalled_data[0][table_name]} DDL:{recalled_data[0][ddl]} coarse_recall_score:{recalled_data[0][coarse_score]};
-                    table_name:{recalled_data[1][table_name]} DDL:{recalled_data[1][ddl]} coarse_recall_score:{recalled_data[1][coarse_score]};
-                    table_name:{recalled_data[2][table_name]} DDL:{recalled_data[2][ddl]} coarse_recall_score:{recalled_data[2][coarse_score]};
-                    table_name:{recalled_data[3][table_name]} DDL:{recalled_data[3][ddl]} coarse_recall_score:{recalled_data[3][coarse_score]};
-                    table_name:{recalled_data[4][table_name]} DDL:{recalled_data[4][ddl]} coarse_recall_score:{recalled_data[4][coarse_score]};
-                    table_name:{recalled_data[5][table_name]} DDL:{recalled_data[5][ddl]} coarse_recall_score:{recalled_data[5][coarse_score]};
-                    table_name:{recalled_data[6][table_name]} DDL:{recalled_data[6][ddl]} coarse_recall_score:{recalled_data[6][coarse_score]};
-                    table_name:{recalled_data[7][table_name]} DDL:{recalled_data[7][ddl]} coarse_recall_score:{recalled_data[7][coarse_score]};
-                    table_name:{recalled_data[8][table_name]} DDL:{recalled_data[8][ddl]} coarse_recall_score:{recalled_data[8][coarse_score]};
-                    table_name:{recalled_data[9][table_name]} DDL:{recalled_data[9][ddl]} coarse_recall_score:{recalled_data[9][coarse_score]};
-                    table_name:{recalled_data[10][table_name]} DDL:{recalled_data[10][ddl]} coarse_recall_score:{recalled_data[10][coarse_score]};
-                    table_name:{recalled_data[11][table_name]} DDL:{recalled_data[11][ddl]} coarse_recall_score:{recalled_data[11][coarse_score]};
-                    table_name:{recalled_data[12][table_name]} DDL:{recalled_data[12][ddl]} coarse_recall_score:{recalled_data[12][coarse_score]};
-                    table_name:{recalled_data[13][table_name]} DDL:{recalled_data[13][ddl]} coarse_recall_score:{recalled_data[13][coarse_score]};
-                    table_name:{recalled_data[14][table_name]} DDL:{recalled_data[14][ddl]} coarse_recall_score:{recalled_data[14][coarse_score]};
-                    table_name:{recalled_data[15][table_name]} DDL:{recalled_data[15][ddl]} coarse_recall_score:{recalled_data[15][coarse_score]};
-                    table_name:{recalled_data[16][table_name]} DDL:{recalled_data[16][ddl]} coarse_recall_score:{recalled_data[16][coarse_score]};
-                    table_name:{recalled_data[17][table_name]} DDL:{recalled_data[17][ddl]} coarse_recall_score:{recalled_data[17][coarse_score]};
-                    table_name:{recalled_data[18][table_name]} DDL:{recalled_data[18][ddl]} coarse_recall_score:{recalled_data[18][coarse_score]};
-                    table_name:{recalled_data[19][table_name]} DDL:{recalled_data[19][ddl]} coarse_recall_score:{recalled_data[19][coarse_score]};
-                    
-                    **输出格式要求：**
-                    请仅输出一个 JSON 对象，不要包含 markdown 格式（如 ```json ... ```），格式如下：
-                    {
-                        "reasoning": "在此处简要分析为什么选择这些表，排除那些表...",
-                        "selected_tables": ["table_name_A", "table_name_B"]
-                    }
-                    """
-        )
+        self.rerank_prompt = None
         self.knowledge_in_rules = None
         print(Fore.GREEN + "SchemaRetriever.__init__完成" + Style.RESET_ALL)
 
-    def _load_schema(self, schema_file_path: str) -> List[Dict]:
+    @staticmethod
+    def _load_schema(schema_file_path: str) -> List[Dict]:
         """加载schema.json"""
         if os.path.exists(schema_file_path):
             with open(schema_file_path, 'r', encoding='utf-8') as f:
@@ -90,6 +45,49 @@ class SchemaRetriever:
         else:
             print(Fore.RED+'schema_file_path 不存在'+Style.RESET_ALL)
             return []
+    #根据粗排得到的DDL生成str,传入到prompt
+    def _get_recalled_data_texts(self)->str:
+        table_lines = []
+        for i, item in enumerate(self.recalled_data,1):
+            line = f"第{i}张,table_name:{item['table_name']},DDL:{item['ddl']} coarse_recall_score:{item['coarse_score']};"
+            table_lines.append(line)
+        # 2. 用换行符连接所有行
+        formatted_tables_text = "\n".join(table_lines)
+        return formatted_tables_text
+
+    def _get_rerank_prompt_str(self, query, question_table_list, knowledge_in_rules, recalled_data_texts, top_k) -> str:
+        """
+        原生 Python f-string 生成 Prompt，确保返回字符串
+        """
+        return f"""
+            你是一个专业的数据库管理员和 SQL 专家，你的工作环境使用starrocks/allin1-ubuntu:2.5.12。
+            你的任务是根据用户的自然语言问题，从给定的候选数据表中筛选出**真正需要**使用的{top_k}张表。
+
+            **任务要求：**
+            1. 仔细阅读用户的查询和提供的候选表结构（DDL）。
+            2. 分析每个表是否包含回答问题所需的列（注意查看列的 COMMENT 注释）。
+            3. 如果一个表是多余的或与问题无关，请不要选择它。
+            4. 就算表名看起来相关，如果缺少核心字段，也不要选择。
+
+            **用户问题：**
+            {query}
+
+            **用户问题相关知识背景：**
+            {knowledge_in_rules}
+
+            **用户问题相关表格：**
+            {question_table_list}
+
+            **候选表和对应DDL结构：**
+            {recalled_data_texts}
+
+            **输出格式要求：**
+            请仅输出一个 JSON 对象，并且下面的"selected_tables"中包含{top_k}张表，不要包含 markdown 格式（如 ```json ... ```），格式如下：
+            {{
+                "reasoning": "在此处简要分析为什么选择这些表，排除那些表...",
+                "selected_tables": ["table_name_A", "table_name_B", "table_name_C", "table_name_D", "table_name_E"]
+            }}
+            """
 
     def _build_index(self):
         """构建FAISS索引"""
@@ -105,7 +103,7 @@ class SchemaRetriever:
         else:
             print(Fore.BLUE+"未找到缓存，调用 embedding_cloud 生成 embedding..."+Style.RESET_ALL)
             # 转换为DDL
-            Schema2DDL(self.schema_data, schemaddl_file_path).build()
+            Schema2DDL(self.schema_data).build()
             # 映射为向量
             EmbeddingDDL(schemaddl_file_path, DDL_embedding_cache_file_path).embedding()
             embedding = np.load(DDL_embedding_cache_file_path)
@@ -152,10 +150,10 @@ class SchemaRetriever:
         # 搜索 Top 20
         distances, indices = self.index.search(q_vec, top_k)
 
-        for rank, index in enumerate(indices[0],1):
+        for rank, index in enumerate(indices[0]):
             if index == -1:
                 continue
-            score = distances[0][index]
+            score = distances[0][rank]
             table_name = schemaDDL_dataindex[index]
             DDL_text = schemaDDL_data[index]
             candidate = {
@@ -187,7 +185,7 @@ class SchemaRetriever:
     def _call_LLM(self):
         return Generation.call(
                 model='qwen-max',  # 或'qwen-plus'，kimi-k2
-                messages={'role': 'user', 'content': self.rerank_prompt},
+                messages=[{'role': 'user', 'content': self.rerank_prompt}],
                 result_format='message',  # 使用 message 格式
         )
 
@@ -199,34 +197,44 @@ class SchemaRetriever:
         :return:
         '''
         final_schema = []
-        self.knowledge_in_rules = Knowledge2Rule.build(self.state)
+        knowledge2rule = Knowledge2Rule()
+        self.knowledge_in_rules = knowledge2rule.build(self.state)
         query: str = self._build_query(self.state)
         self.recalled_data = self._recall(query)
-        self.rerank_prompt.format(
+        recalled_data_texts = self._get_recalled_data_texts()
+        self.rerank_prompt = self._get_rerank_prompt_str(
             query=query,
             knowledge_in_rules=self.knowledge_in_rules,
             question_table_list=self.state["table_list"],
-            table_list = self.recalled_data,
+            recalled_data_texts=recalled_data_texts,
             top_k=top_k
         )
-
         response = self._call_LLM()
 
         if response.status_code == HTTPStatus.OK:
             content = response.output.choices[0].message.content
+            # 1. 先去掉 markdown 的代码块标记 (这一步保留，用来处理 ```json 的情况)
+            content = content.replace("```json", "").replace("```", "").strip()
+
             try:
-                # 清洗和解析 JSON, 有时候模型会带上 ```json ... ```，需要去掉
-                content = content.replace("```json", "").replace("```", "").strip()
+                # 2. 寻找第一个左大括号 '{' 的位置
+                start_index = content.find('{')
+                # 3. 寻找最后一个右大括号 '}' 的位置
+                end_index = content.rfind('}')
+
+                # 4. 如果找到了合法的起止位置，进行截取
+                if start_index != -1 and end_index != -1 and end_index > start_index:
+                    content = content[start_index: end_index + 1]
+
                 result_json = json.loads(content)
-
-                print(f"{Fore.GREEN}--- 精排推理过程 ---{Style.RESET_ALL}")
-                print(result_json.get("reasoning"))
-
+                #print(result_json.get("reasoning"))
                 final_schema = result_json.get("selected_tables", [])
                 return final_schema
-            except json.JSONDecodeError:
-                print(f"{Fore.RED}JSON 解析失败，模型输出为: {content}{Style.RESET_ALL}")
-                return []  # 或者返回 fallback 策略
+            except json.JSONDecodeError as e:
+                # 打印详细错误信息方便调试
+                print(f"{Fore.RED}JSON 解析失败: {e}{Style.RESET_ALL}")
+                print(f"清洗后的内容为: {content}")
+                return []
         else:
             print(f"{Fore.RED}API 调用失败: {response.code} - {response.message}{Style.RESET_ALL}")
             return []
