@@ -49,15 +49,19 @@ class SQLGenerator:
 
         return sql_content
 
-    def _generate_user_prompt(self,question,schema,knowledge,few_shot_examples):
+    def _generate_user_prompt(self,question,schema,knowledge,table_list):
         return f"""
-                ### 1. 用户问题: {question}
+                {Config.COMMON_KNOWLEDGE}
                 
-                ### 2. 数据库 Schema 信息: {schema}
+                ## 以下为用户问题以及其他输出要求:
                 
-                ### 3. 问题相关knowledge 信息: {knowledge}
+                ### 1. 问题: {question}
+                
+                ### 2. Schema 信息: {schema}
+                
+                ### 3. 相关knowledge 信息: {knowledge}
         
-                ### 4. 参考示例 (Few-shot): {few_shot_examples}                   
+                ### 4. table_list: {table_list}                  
         
                 ### 5. 核心指令 (必须严格遵守)
                 1. **方言兼容**: 使用 StarRocks v2.5.12 语法（高度兼容 MySQL 协议）。注意日期函数的使用（如 `date_trunc`, `str_to_date` 等）需符合 StarRocks 规范。
@@ -87,12 +91,12 @@ class SQLGenerator:
         )
 
     def build(self, state:AgentState):
-        few_shot_examples = self._get_few_shot_examples()
+        #few_shot_examples = self._get_few_shot_examples()      暂时先不用table_list
         user_prompt = self._generate_user_prompt(
             question=state.get("query"),
             schema=state.get("schema"),
             knowledge=state.get("knowledge_rules"),
-            few_shot_examples=few_shot_examples
+            table_list=state.get("table_list")
         )
         self.messages = [{
             "role": "system",

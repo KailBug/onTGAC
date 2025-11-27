@@ -20,9 +20,12 @@ class SQLRefiner:
         """
         接收AgentState，提取错误的SQL让LLM生成新的SQL，更新AgentState返回
         """
-        self.fix_system_prompt = """
+        self.fix_system_prompt = f"""
             你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师,给用户生成的SQL查询执行错误，
             你的任务是根据**错误消息**和**提供的正确表模式**修复SQL，得到一个正确的SQL。
+            
+            ## 下面是你掌握的业务知识：
+            {Config.COMMON_KNOWLEDGE}
         """
         self.response = None
         self.messages = None
