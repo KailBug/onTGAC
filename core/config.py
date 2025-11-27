@@ -54,7 +54,7 @@ class Config:
                     
                     ## 1. 核心业务映射 (Entity Mapping)
                     
-                    当用户提到以下游戏或业务名词时，请使用对应的表前缀或筛选条件：
+                    当用户提到以下游戏或业务名词时，使用对应的表前缀或筛选条件：
                     
                     | 业务实体 (中文) | 数据库代号 (Gamecode/Prefix) | 识别逻辑/筛选条件 | 说明 |
                     | :--- | :--- | :--- | :--- |
@@ -102,7 +102,7 @@ class Config:
                     
                     ## 4. 常用字段规范 (Field Mapping)
                     
-                    在编写 SQL 时，请优先使用以下字段命名习惯：
+                    在编写 SQL 时，优先使用以下字段命名习惯：
                     
                     * **日期分区**:
                         * 通常为 `dtstatdate` 或 `statis_date` (格式 YYYYMMDD, 类型 bigint/string)。

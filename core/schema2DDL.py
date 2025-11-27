@@ -56,11 +56,11 @@ class Schema2DDL:
             col_desc = col_item.get("description", "")
 
             #构建列定义，格式: col_name col_type COMMENT 'col_desc',
-            line = f"  {col_name} {col_type}"
+            line = f"  列名:{col_name} 字段类型:{col_type}"
             if col_desc:
                 #清洗一下描述中的特殊字符，防止 SQL 语法错误
                 clean_desc = col_desc.replace("'", "")
-                line += f" COMMENT '{clean_desc}'"
+                line += f" 列描述:'{clean_desc}'"
             line += ","
             ddl_lines.append(line)
 
@@ -69,6 +69,6 @@ class Schema2DDL:
             ddl_lines[-1] = ddl_lines[-1].rstrip(",")  # 移除最后一列的逗号
 
         #将表描述也加到 DDL 的 COMMENT 中
-        ddl_lines.append(f") COMMENT '{table_desc}';")
+        ddl_lines.append(f") 表格描述:'{table_desc}';")
 
         return "\n".join(ddl_lines)

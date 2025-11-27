@@ -42,8 +42,8 @@ class Agent:
     def route_next(state: AgentState) -> str:
         error_count = state.get("error_count")
         sql_state = state.get("sql_state")
-        # 优先级 1: 如果已经尝试了3次（或者当前是第3次失败），停止尝试
-        if error_count >= 3:
+        # 优先级 1: 如果已经尝试了2次（或者当前是第2次失败），停止尝试
+        if error_count >= 2:
             return END
         # 优先级 2: 错误处理循环
         if sql_state in ["execute_error", "Unexpected_error"]:

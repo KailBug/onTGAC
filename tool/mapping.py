@@ -77,8 +77,6 @@ class Mapping:
                     "table_list": item.get("table_list"),
                     "knowledge": item.get("knowledge")
                 })
-            sys.exit()
-
 
         with open(output_file_path, "w", encoding="utf-8") as f:
             json.dump(questions_data_mapping, f, ensure_ascii=False, indent=4)
