@@ -59,7 +59,7 @@ class SQLGenerator:
                 
                 ### 2. Schema 信息: {schema}
                 
-                ### 3. 相关knowledge 信息: {knowledge}
+                ### 3. 执行的过滤条件: {knowledge}
         
                 ### 4. table_list: {table_list}                  
         

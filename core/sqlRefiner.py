@@ -48,8 +48,8 @@ class SQLRefiner:
                 - **用户问题**: {question}
                 - **Table Schema**: {schema_info}
                 
-                ### 用户问题相关知识
-                - **Knowledge**: {knowledge}
+                ### 执行的过滤条件:
+                - {knowledge}
                 
                 ### 执行后反馈信息
                 - **Error SQL**: {wrong_sql}
