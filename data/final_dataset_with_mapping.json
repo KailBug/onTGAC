@@ -2,7 +2,7 @@
     {
         "sql_id": "sql_1",
         "question": "统计2025.07.24的手游全量用户且标签为其他，在竞品业务下2025.05.30-2025.07.24的在线时长。\n输出：suserid、sgamecode、ionlinetime\n\n",
-        "sql": "",
+        "sql": "SELECT t1.suserid, t1.sgamecode, SUM(t1.ionlinetime) AS ionlinetime\nFROM dws_mgamejp_login_user_activity_di t1\nJOIN dim_vplayerid_vies_df t2\nON t1.suserid = t2.suserid\nWHERE t1.dtstatdate BETWEEN 20250530 AND 20250724\nAND t2.dtstatdate = '20250724'\nAND t2.itag = '其他'\nGROUP BY t1.suserid, t1.sgamecode;",
         "复杂度": "中等",
         "table_list": [
             "dws_mgamejp_login_user_activity_di",
@@ -13,7 +13,7 @@
     {
         "sql_id": "sql_2",
         "question": "提取1个抽样号码包，2025.7.17-2025.7.23期间付费且不包含721号码包内的用户全量\n输出:gplayerid。",
-        "sql": "",
+        "sql": "SELECT DISTINCT t1.vplayerid AS gplayerid\nFROM (\n    SELECT DISTINCT vplayerid\n    FROM dwd_jordass_privpackagelog_hi\n    WHERE dtstatdate BETWEEN '20250717' AND '20250723'\n      AND iamount > 0\n) t1\nLEFT JOIN dim_extract_311381_conf t2 ON t1.vplayerid = t2.vplayerid\nWHERE t2.vplayerid IS NULL;",
         "复杂度": "中等",
         "table_list": [
             "dim_extract_311381_conf",
@@ -25,7 +25,7 @@
     {
         "sql_id": "sql_3",
         "question": "统计2025年1月勇者盟约端游活跃玩家交叉峡谷端游及手游活跃玩家\n输出：玩家gplayerid",
-        "sql": "",
+        "sql": "SELECT DISTINCT a.iuserid AS gplayerid\nFROM dws_argothek_oss_login_di a\nJOIN dim_argothek_gplayerid2qqwxid_df b\n  ON a.iuserid = b.iuserid\nJOIN dws_mgamejp_login_user_activity_di c\n  ON b.suserid = c.suserid\nWHERE a.statis_date = 20250101\n  AND c.dtstatdate = 20250101\n  AND c.sgamecode IN ('initiatived', 'mgamejp');",
         "复杂度": "简单",
         "table_list": [
             "dws_argothek_oss_login_di",
@@ -37,7 +37,7 @@
     {
         "sql_id": "sql_4",
         "question": "统计开服至今使用频率最高的用户昵称\n2023.07.1200 - 2025071523\n输出：昵称（唯一）、人数",
-        "sql": "",
+        "sql": "SELECT vrolename AS 昵称, COUNT(*) AS 人数 FROM dwd_argothek_playerlogin_hi WHERE dteventtime BETWEEN '2023-07-12 00:00:00' AND '2025-07-15 23:59:59' GROUP BY vrolename ORDER BY 人数 DESC LIMIT 1;",
         "复杂度": "中等",
         "table_list": [
             "dwd_argothek_playerlogin_hi"
@@ -47,7 +47,7 @@
     {
         "sql_id": "sql_6",
         "question": "统计2025.6.12-2025.7.14号手游T2活跃用户在20250529之前端游注册的号码包。\n输出：vplayerid",
-        "sql": "",
+        "sql": "SELECT DISTINCT a.vplayerid\nFROM dws_argothek_ce1_cbt2_vplayerid_suserid_di a\nJOIN dim_argothek_gplayerid2qqwxid_df b\n  ON a.suserid = b.suserid\nWHERE a.dtstatdate BETWEEN '20250612' AND '20250714'\n  AND a.platid = 255\n  AND b.iregdate < '20250529';",
         "复杂度": "简单",
         "table_list": [
             "dim_argothek_gplayerid2qqwxid_df",
@@ -58,7 +58,7 @@
     {
         "sql_id": "sql_7",
         "question": "统计2025.7.3-2025.7.6 开白渠道非内部体验和买量测试，排除全平台\n注册渠道为以下，分别的新进用户数\n89903934\n89903933\n89903932\n89902725\n89902724\n89902723\n89900960\n89900961\n89900962\n输出：日期（20250703、...、20250706）、注册渠道、新进用户数",
-        "sql": "",
+        "sql": "SELECT \n    t.dtstatdate AS dtstatdate,\n    t.iregway AS sourcename,\n    COUNT(DISTINCT t.vplayerid) AS new_user_count\nFROM \n    dws_argothek_ce1_cbt2_vplayerid_suserid_di t\nWHERE \n    t.dtstatdate BETWEEN '20250703' AND '20250706'\n    AND t.is_reg = '1'\n    AND t.iregway IN ('89903934','89903933','89903932','89902725','89902724','89902723','89900960','89900961','89900962')\n    AND t.sourcename NOT IN ('内部体验', '买量测试')\n    AND t.platid != 255\nGROUP BY \n    t.dtstatdate, t.iregway\nORDER BY \n    t.dtstatdate, t.iregway;",
         "复杂度": "中等",
         "table_list": [
             "dws_argothek_ce1_cbt2_vplayerid_suserid_di",
@@ -69,7 +69,7 @@
     {
         "sql_id": "sql_8",
         "question": "统计25年4月到25年6月，按月输出gamePodId的峰值数据与游戏对局数。\n输出：\n月份(2025-04、2025-05、2025-06)\n服务器节点\n峰值时间\n总游戏结束数\n排位结束数\n普通结束数\n极速结束数",
-        "sql": "",
+        "sql": "SELECT\n    DATE_FORMAT(gamestartmillis, '%Y-%m') AS month,\n    gamepodid AS server_node,\n    FROM_UNIXTIME(MAX(gamestartmillis / 1000)) AS peak_time,\n    COUNT(*) AS total_game_end_count,\n    SUM(CASE WHEN queueid LIKE '%ranked%' THEN 1 ELSE 0 END) AS ranked_end_count,\n    SUM(CASE WHEN queueid NOT LIKE '%ranked%' AND provisioningflowid != 'quickplay' AND provisioningflowid != 'swift' THEN 1 ELSE 0 END) AS normal_end_count,\n    SUM(CASE WHEN provisioningflowid = 'swift' THEN 1 ELSE 0 END) AS swift_end_count\nFROM\n    dwd_argothek_matchdetails_hi\nWHERE\n    DATE_FORMAT(gamestartmillis, '%Y-%m') IN ('2025-04', '2025-05', '2025-06')\n    AND iscompleted = 1\nGROUP BY\n    month,\n    gamepodid\nORDER BY\n    month,\n    total_game_end_count DESC;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_argothek_matchdetails_hi"
@@ -79,7 +79,7 @@
     {
         "sql_id": "sql_9",
         "question": "统计20250702手游fps最后活跃日期为近半年的用户的城市等级分布。\n输出：城市等级，用户人数",
-        "sql": "",
+        "sql": "SELECT \n    city_level AS `城市等级`,\n    COUNT(DISTINCT a.suserid) AS `用户人数`\nFROM \n    dim_mgamejp_account_allinfo_nf a\nJOIN \n    dim_uf_player_gameinfo_mf b\nON \n    a.suserid = b.userid AND a.suseridtype = b.id_type\nWHERE \n    a.dtstatdate = 20250702\n    AND a.sgamecode IN ('jordass', 'argothek') -- 手游FPS游戏\n    AND a.ilastactdate >= 20250101 -- 近半年最后活跃\n    AND a.splattype IN ('Android', 'iOS')\n    AND a.saccounttype = '-100'\nGROUP BY \n    city_level;",
         "复杂度": "中等",
         "table_list": [
             "dim_mgamejp_account_allinfo_nf",
@@ -90,7 +90,7 @@
     {
         "sql_id": "sql_10",
         "question": "统计2023.7.12-2025.6.15，赛季bp道具皮肤的使用情况。\n输出：道具id、赛季名称、当前赛季使用人数、当前赛季购买人数",
-        "sql": "",
+        "sql": "WITH season_filter AS (\n    SELECT \n        seasonid,\n        seasonidname\n    FROM dim_argothek_seasondate_df\n    WHERE idate BETWEEN '2023-07-12' AND '2025-06-15'\n),\nspray_usage AS (\n    SELECT DISTINCT\n        sprayid AS gearid,\n        subject AS iuserid\n    FROM dwd_argothek_playerloadout_sprayslots_hi\n    WHERE dteventtime BETWEEN '2023-07-12 00:00:00' AND '2025-06-15 23:59:59'\n),\nspray_purchase AS (\n    SELECT DISTINCT\n        purchasedItemId AS gearid,\n        CAST(SUBSTR(dtstatdate, 1, 8) AS DATE) AS purchase_date\n    FROM dwd_argothek_commercialization_gearid_df\n    WHERE idate BETWEEN '2023-07-12' AND '2025-06-15'\n)\nSELECT \n    su.gearid AS 道具id,\n    sf.seasonidname AS 赛季名称,\n    COUNT(DISTINCT su.iuserid) AS 当前赛季使用人数,\n    COUNT(DISTINCT sp.gearid) AS 当前赛季购买人数\nFROM spray_usage su\nJOIN season_filter sf ON 1=1\nLEFT JOIN spray_purchase sp ON su.gearid = sp.gearid\nGROUP BY su.gearid, sf.seasonidname;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_argothek_playerloadout_expressions_hi",
@@ -104,7 +104,7 @@
     {
         "sql_id": "sql_11",
         "question": "统计近30天活跃玩家数，近30天活跃且同时拥有奖池所有道具玩家数\n输出：近30天活跃玩家数、近30天活跃且同时拥有奖池所有道具玩家数\n补充说明：\n当前日期时间：'20250617'\n其中奖池道具id为：\n71d260ca-4bad-81f2-0298-44860341a7a6\n48601754-442d-98cb-2109-3fb2075500ec\na9126263-439c-7be6-d668-52a6c0c0a36f\n34ecc788-4034-71d2-a0ac-c398b8ecb2ae\n56f98991-43f8-dcc8-189e-08b7ae6c42ad\n8453f8ef-4c0b-46e2-8768-3e9e45c67a2c\n06d90274-435f-3e32-9d57-26bc228ae2e5\n8196dea4-4229-c951-13a9-088fb13b3512\n3abc330f-444a-6dfd-5863-81856ba62624\n041a43a4-46fe-dab7-c974-36bf91eab33d\n5b863cb9-4e41-ec89-69ee-49a223d05ff1\n",
-        "sql": "",
+        "sql": "WITH active_players AS (\n    SELECT DISTINCT iuserid\n    FROM dws_argothek_oss_useractivity_df\n    WHERE statis_date BETWEEN 20250519 AND 20250617\n      AND SUBSTRING(iactivity, 1, 30) LIKE '%1%'\n),\npool_item_owners AS (\n    SELECT iuserid\n    FROM dwd_argothek_gearrecord_df\n    WHERE dtstatdate = '20250617'\n      AND iGoodsId IN (\n        '71d260ca-4bad-81f2-0298-44860341a7a6',\n        '48601754-442d-98cb-2109-3fb2075500ec',\n        'a9126263-439c-7be6-d668-52a6c0c0a36f',\n        '34ecc788-4034-71d2-a0ac-c398b8ecb2ae',\n        '56f98991-43f8-dcc8-189e-08b7ae6c42ad',\n        '8453f8ef-4c0b-46e2-8768-3e9e45c67a2c',\n        '06d90274-435f-3e32-9d57-26bc228ae2e5',\n        '8196dea4-4229-c951-13a9-088fb13b3512',\n        '3abc330f-444a-6dfd-5863-81856ba62624',\n        '041a43a4-46fe-dab7-c974-36bf91eab33d',\n        '5b863cb9-4e41-ec89-69ee-49a223d05ff1'\n      )\n    GROUP BY iuserid\n    HAVING COUNT(DISTINCT iGoodsId) = 11\n)\nSELECT \n    (SELECT COUNT(*) FROM active_players) AS active_player_count,\n    (SELECT COUNT(*) FROM active_players a INNER JOIN pool_item_owners p ON a.iuserid = p.iuserid) AS active_pool_owner_count;",
         "复杂度": "中等",
         "table_list": [
             "dwd_argothek_gearrecord_df",
@@ -115,7 +115,7 @@
     {
         "sql_id": "sql_13",
         "question": "统计20230712以来，历史累计活跃30天以上，但3月12日及以后未活跃过的用户且剔除掉历史充值 1500 元以上的用户后的玩家wxid\n输出：玩家wxid\n时间统计范围:20230712-20250612",
-        "sql": "",
+        "sql": "WITH ActivePlayers AS (\n    SELECT vplayerid\n    FROM dws_jordass_login_df\n    WHERE dtstatdate BETWEEN 20230712 AND 20250612\n    GROUP BY vplayerid\n    HAVING COUNT(DISTINCT dtstatdate) > 30\n),\nInactiveSinceMarch AS (\n    SELECT vplayerid\n    FROM dws_jordass_login_df\n    WHERE dtstatdate BETWEEN 20230712 AND 20250612\n    GROUP BY vplayerid\n    HAVING SUM(CASE WHEN dtstatdate >= 20230312 THEN 1 ELSE 0 END) = 0\n),\nChargedPlayers AS (\n    SELECT iuserid, SUM(ftranamt) AS total_charge\n    FROM dws_argothek_oss_portaltransaction_di\n    WHERE statis_date BETWEEN '20230712' AND '20250612'\n    GROUP BY iuserid\n    HAVING total_charge > 150000\n)\nSELECT DISTINCT t.swxid\nFROM ActivePlayers a\nJOIN InactiveSinceMarch i ON a.vplayerid = i.vplayerid\nLEFT JOIN ChargedPlayers c ON a.vplayerid = c.iuserid\nJOIN dim_mgamejp_tbplayerid2wxid_nf t ON a.vplayerid = t.splayerid\nWHERE c.iuserid IS NULL\nAND t.dtstatdate = (SELECT MAX(dtstatdate) FROM dim_mgamejp_tbplayerid2wxid_nf);",
         "复杂度": "复杂",
         "table_list": [
             "dim_mgamejp_tbplayerid2wxid_nf",
@@ -129,7 +129,7 @@
     {
         "sql_id": "sql_14",
         "question": "统计2025年5月份活跃但2025年6月未活跃的qq号码包\n输出:用户suserid",
-        "sql": "",
+        "sql": "WITH may_active_users AS (\n    SELECT DISTINCT suserid\n    FROM dws_argothek_oss_login_di t1\n    JOIN dim_argothek_gplayerid2qqwxid_df t2\n      ON t1.iuserid = t2.iuserid\n    WHERE t1.statis_date BETWEEN 20250501 AND 20250531\n      AND SUBSTR(t2.cBitmap, 1, 1) = '1'\n),\njun_active_users AS (\n    SELECT DISTINCT suserid\n    FROM dws_argothek_oss_login_di t1\n    JOIN dim_argothek_gplayerid2qqwxid_df t2\n      ON t1.iuserid = t2.iuserid\n    WHERE t1.statis_date BETWEEN 20250601 AND 20250630\n      AND SUBSTR(t2.cBitmap, 1, 1) = '1'\n)\nSELECT suserid\nFROM may_active_users\nWHERE suserid NOT IN (SELECT suserid FROM jun_active_users);",
         "复杂度": "中等",
         "table_list": [
             "dws_argothek_oss_login_di",
@@ -140,7 +140,7 @@
     {
         "sql_id": "sql_15",
         "question": "统计2025年5月勇者盟约流失用户中，流向峡谷PC的玩家gplayerid\n输出：玩家gplayerid",
-        "sql": "",
+        "sql": "WITH churned_users AS (\n    SELECT \n        a.iuserid AS gplayerid\n    FROM \n        dws_argothek_oss_useractivity_df a\n    JOIN \n        dim_argothek_gplayerid2qqwxid_df b\n        ON a.iuserid = b.iuserid AND b.dtstatdate = '20250610'\n    WHERE \n        a.statis_date = 20250531\n        AND SUBSTR(a.iactivity, 31, 1) = '0' -- 5月最后一天未活跃\n        AND EXISTS (\n            SELECT 1\n            FROM dws_mgamejp_login_user_activity_di c\n            WHERE c.suserid = b.suserid\n              AND c.dtstatdate BETWEEN 20250501 AND 20250531\n              AND c.sgamecode = 'initiatived'\n        )\n)\nSELECT DISTINCT gplayerid\nFROM churned_users;",
         "复杂度": "中等",
         "table_list": [
             "dws_argothek_oss_useractivity_df",
@@ -152,7 +152,7 @@
     {
         "sql_id": "sql_16",
         "question": "统计：近一年（2023/7/12-2025/5/31）按段位统计所有竞技模式对局中，排除掉投降的对局情况。\n输出：日期（20230712-20250531）、段位（黑铁、...、无段位、全量段位）当日竞技模式非投降局对局数、当日竞技模式投降局对局数、当日竞技模式非投降局中 双方胜利回合差>=6和双方胜利回合差>=8的对局数",
-        "sql": "",
+        "sql": "SELECT 1;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_argothek_playermatchstats_hi"
@@ -162,7 +162,7 @@
     {
         "sql_id": "sql_18",
         "question": "统计20250506-20250512期间每日的指定网吧渠道内每个渠道活跃人数\n输出：日期（20250506、...、20250512）、渠道、玩家数\n其中：网吧渠道：iloginway in (1,10,11,12,35,20,28,29,30,31,32,33,34,36)",
-        "sql": "",
+        "sql": "SELECT \n    statis_date AS 日期,\n    iloginway AS 渠道,\n    COUNT(DISTINCT iuserid) AS 玩家数\nFROM \n    dws_argothek_oss_login_di\nWHERE \n    statis_date BETWEEN 20250506 AND 20250512\n    AND iloginway IN (1,10,11,12,35,20,28,29,30,31,32,33,34,36)\nGROUP BY \n    statis_date, iloginway\nORDER BY \n    statis_date, 渠道;",
         "复杂度": "简单",
         "table_list": [
             "dws_argothek_oss_login_di"
@@ -172,7 +172,7 @@
     {
         "sql_id": "sql_19",
         "question": "统计2024年5月02日-2024年5月02日，日活跃用户的周边休闲模式情况。\n\n活跃日期区间：\"20250426-20250502\"\n\n输出：\n日活跃中仅玩QuickMatch模式的玩家数\n日活跃中仅玩RushMode模式的玩家数\n日活跃中仅玩CombatArena模式的玩家数\n日活跃中仅玩以上三个模式不玩其他模式的玩家数\n日活跃中仅玩以上三个模式不玩其他模式的玩家周活跃频次\n",
-        "sql": "",
+        "sql": "WITH ModePlayData AS (\n    SELECT \n        a.iuserid,\n        COUNT(CASE WHEN b.queueid = 'QuickMatch' THEN 1 END) AS QuickMatchCount,\n        COUNT(CASE WHEN b.queueid = 'RushMode' THEN 1 END) AS RushModeCount,\n        COUNT(CASE WHEN b.queueid = 'CombatArena' THEN 1 END) AS CombatArenaCount,\n        COUNT(*) AS TotalPlays\n    FROM dws_argothek_oss_login_di a\n    JOIN dwd_argothek_playermatchstats_hi b\n      ON a.iuserid = b.vroleid\n    WHERE a.statis_date BETWEEN 20250426 AND 20250502\n      AND b.tdbank_imp_date = '2025-05-02'\n    GROUP BY a.iuserid\n),\nFilteredPlayers AS (\n    SELECT \n        iuserid,\n        QuickMatchCount,\n        RushModeCount,\n        CombatArenaCount,\n        TotalPlays\n    FROM ModePlayData\n    WHERE (QuickMatchCount > 0 OR RushModeCount > 0 OR CombatArenaCount > 0)\n      AND (QuickMatchCount + RushModeCount + CombatArenaCount) = TotalPlays\n)\nSELECT \n    SUM(CASE WHEN QuickMatchCount > 0 AND RushModeCount = 0 AND CombatArenaCount = 0 THEN 1 ELSE 0 END) AS OnlyQuickMatchPlayers,\n    SUM(CASE WHEN RushModeCount > 0 AND QuickMatchCount = 0 AND CombatArenaCount = 0 THEN 1 ELSE 0 END) AS OnlyRushModePlayers,\n    SUM(CASE WHEN CombatArenaCount > 0 AND QuickMatchCount = 0 AND RushModeCount = 0 THEN 1 ELSE 0 END) AS OnlyCombatArenaPlayers,\n    COUNT(*) AS PlayersPlayingOnlyTheseModes,\n    AVG(CAST(TotalPlays AS DOUBLE)) AS AvgWeeklyFrequency\nFROM FilteredPlayers;",
         "复杂度": "复杂",
         "table_list": [
             "dws_argothek_oss_login_di",
@@ -184,7 +184,7 @@
     {
         "sql_id": "sql_20",
         "question": "统计20240101-20240430，网吧特权用户的指标数据。\n输出：\n月份（按月：202401、202402、202403、202404）\n人均对局时长（小时）\n网吧时间占当月游戏时间比例\n有对局的天数\n排位模式时长（小时）\n排位模式组队率\n月付费率\n月ARPA\n月ARPPA\n高校特权激活率\n\n",
-        "sql": "",
+        "sql": "WITH netbar_users AS (\n    SELECT DISTINCT iuserid\n    FROM dwd_argothek_playerlogout_hi\n    WHERE tdbank_imp_date BETWEEN '20240101' AND '20240430'\n      AND inetbarlevel IN ('1', '2', '3')\n),\nmonthly_login AS (\n    SELECT \n        DATE_FORMAT(CAST(statis_date AS STRING), '%Y%m') AS month,\n        iuserid,\n        SUM(iplaytime) AS total_play_time,\n        COUNT(DISTINCT statis_date) AS active_days\n    FROM dws_argothek_oss_login_di\n    WHERE statis_date BETWEEN 20240101 AND 20240430\n    GROUP BY DATE_FORMAT(CAST(statis_date AS STRING), '%Y%m'), iuserid\n),\nnetbar_time AS (\n    SELECT \n        DATE_FORMAT(CAST(tdbank_imp_date AS STRING), '%Y%m') AS month,\n        iuserid,\n        SUM(ionlinetime) AS netbar_play_time\n    FROM dwd_argothek_playerlogout_hi\n    WHERE tdbank_imp_date BETWEEN '20240101' AND '20240430'\n      AND inetbarlevel IN ('1', '2', '3')\n    GROUP BY DATE_FORMAT(CAST(tdbank_imp_date AS STRING), '%Y%m'), iuserid\n),\nmatch_stats AS (\n    SELECT \n        DATE_FORMAT(CAST(REPLACE(SUBSTR(m.dteventtime, 1, 10), '-', '') AS STRING), '%Y%m') AS month,\n        lo.iuserid,\n        SUM(m.gamelengthmillis) / 3600000 AS rush_mode_hours,\n        COUNT(DISTINCT CASE WHEN m.partyid IS NOT NULL THEN m.matchid END) AS rush_mode_party_matches,\n        COUNT(DISTINCT m.matchid) AS rush_mode_total_matches\n    FROM dwd_argothek_playermatchstats_hi m\n    INNER JOIN dwd_argothek_playerlogout_hi lo ON m.vroleid = lo.vroleid\n        AND DATE_FORMAT(CAST(REPLACE(SUBSTR(m.dteventtime, 1, 10), '-', '') AS STRING), '%Y%m') = DATE_FORMAT(CAST(lo.tdbank_imp_date AS STRING), '%Y%m')\n    WHERE m.dteventtime >= '2024-01-01' AND m.dteventtime < '2024-05-01'\n      AND m.queueid = 'RushMode'\n      AND lo.inetbarlevel IN ('1', '2', '3')\n    GROUP BY DATE_FORMAT(CAST(REPLACE(SUBSTR(m.dteventtime, 1, 10), '-', '') AS STRING), '%Y%m'), lo.iuserid\n),\npayment_stats AS (\n    SELECT \n        DATE_FORMAT(CAST(statis_date AS STRING), '%Y%m') AS month,\n        iuserid,\n        SUM(ftranamt) AS total_payment\n    FROM dws_argothek_oss_portaltransaction_di\n    WHERE statis_date BETWEEN 20240101 AND 20240430\n    GROUP BY DATE_FORMAT(CAST(statis_date AS STRING), '%Y%m'), iuserid\n),\ncampus_stats AS (\n    SELECT \n        DATE_FORMAT(CAST(tdbank_imp_date AS STRING), '%Y%m') AS month,\n        iuserid,\n        MAX(CASE WHEN icampuslevel IS NOT NULL AND icampuslevel != '' THEN 1 ELSE 0 END) AS campus_activated\n    FROM dwd_argothek_playerlogout_hi\n    WHERE tdbank_imp_date BETWEEN '20240101' AND '20240430'\n    GROUP BY DATE_FORMAT(CAST(tdbank_imp_date AS STRING), '%Y%m'), iuserid\n)\nSELECT \n    ml.month,\n    ROUND(SUM(ml.total_play_time) / 3600.0 / COUNT(DISTINCT ml.iuserid), 2) AS avg_game_duration_hours,\n    ROUND(SUM(nt.netbar_play_time) * 100.0 / NULLIF(SUM(ml.total_play_time), 0), 2) AS netbar_time_percentage,\n    ROUND(AVG(ml.active_days), 2) AS active_days,\n    ROUND(SUM(m.rush_mode_hours), 2) AS rush_mode_hours,\n    ROUND(SUM(m.rush_mode_party_matches) * 100.0 / NULLIF(SUM(m.rush_mode_total_matches), 0), 2) AS rush_mode_team_rate,\n    ROUND(COUNT(DISTINCT ps.iuserid) * 100.0 / COUNT(DISTINCT ml.iuserid), 2) AS monthly_payment_rate,\n    ROUND(SUM(ps.total_payment) / 100.0 / COUNT(DISTINCT ml.iuserid), 2) AS arpa,\n    ROUND(SUM(ps.total_payment) / 100.0 / NULLIF(COUNT(DISTINCT ps.iuserid), 0), 2) AS arppa,\n    ROUND(SUM(cs.campus_activated) * 100.0 / COUNT(DISTINCT ml.iuserid), 2) AS campus_privilege_activation_rate\nFROM monthly_login ml\nINNER JOIN netbar_users nu ON ml.iuserid = nu.iuserid\nLEFT JOIN netbar_time nt ON ml.month = nt.month AND ml.iuserid = nt.iuserid\nLEFT JOIN match_stats m ON ml.month = m.month AND ml.iuserid = m.iuserid\nLEFT JOIN payment_stats ps ON ml.month = ps.month AND ml.iuserid = ps.iuserid\nLEFT JOIN campus_stats cs ON ml.month = cs.month AND ml.iuserid = cs.iuserid\nGROUP BY ml.month\nORDER BY ml.month;",
         "复杂度": "复杂",
         "table_list": [
             "dws_argothek_oss_login_di",
@@ -197,7 +197,7 @@
     {
         "sql_id": "sql_22",
         "question": "统计：近30天用户在渠道登录的天数为5到8天，取最多天数的用户，并将用户ID转为qq\n输出：QQ\n统计日期：20250330-20250428",
-        "sql": "",
+        "sql": "WITH login_days AS (\n    SELECT \n        iuserid,\n        COUNT(DISTINCT statis_date) AS login_day_count\n    FROM \n        dws_argothek_oss_login_di\n    WHERE \n        statis_date BETWEEN 20250330 AND 20250428\n    GROUP BY \n        iuserid\n    HAVING \n        login_day_count BETWEEN 5 AND 8\n),\nmax_login_user AS (\n    SELECT \n        iuserid\n    FROM \n        login_days\n    ORDER BY \n        login_day_count DESC\n    LIMIT 1\n)\nSELECT \n    suserid AS QQ\nFROM \n    max_login_user t1\nJOIN \n    dim_argothek_gplayerid2qqwxid_df t2\nON \n    t1.iuserid = t2.iuserid\nWHERE \n    dtstatdate = '20250428';",
         "复杂度": "中等",
         "table_list": [
             "dws_argothek_oss_login_di",
@@ -208,7 +208,7 @@
     {
         "sql_id": "sql_23",
         "question": "统计2025年3月24日至2025年3月30日，至少完成过一场对局，且渠道登录的用户qq\n输出:qq",
-        "sql": "",
+        "sql": "SELECT DISTINCT t2.suserid AS qq\nFROM dws_argothek_oss_login_di t1\nJOIN dim_argothek_gplayerid2qqwxid_df t2\n  ON t1.iuserid = t2.iuserid\nWHERE t1.statis_date BETWEEN 20250324 AND 20250330\n  AND t1.iloginway = 3\n  AND t2.swxid_type = 'qq'\n  AND t2.dtstatdate = '20250428'\n  AND EXISTS (\n    SELECT 1\n    FROM dwd_argothek_playermatchstats_hi m\n    WHERE m.vroleid IN (\n      SELECT r.vRoleID\n      FROM dim_argothek_gplayerid_vroleid_df r\n      WHERE r.iuserid = t1.iuserid\n        AND r.dtstatdate = '20250428'\n    )\n    AND SUBSTR(m.dteventtime, 1, 10) BETWEEN '2025-03-24' AND '2025-03-30'\n);",
         "复杂度": "中等",
         "table_list": [
             "dws_argothek_oss_login_di",
@@ -221,7 +221,7 @@
     {
         "sql_id": "sql_24",
         "question": "统计下列英雄和对应上线日期，新英雄上线首周的持续选择情况。限定除自定义模式，新手、训练场外所有模式\n输出：英雄id、首周选择新英雄次数超过3次的玩家、首周选择新英雄次数超过10次的玩家、首周选择过新英雄的玩家、超过3次的玩家占比、超过10次的玩家占比\n\n",
-        "sql": "",
+        "sql": "WITH hero_release_dates AS (\n    SELECT characterid AS hero_id, MIN(tdbank_imp_date) AS release_date\n    FROM dwd_argothek_playermatchdetail_hi\n    WHERE tdbank_imp_date >= '20230101' AND tdbank_imp_date <= '20231231'\n    GROUP BY characterid\n),\nfirst_week_matches AS (\n    SELECT m.*, r.release_date\n    FROM dwd_argothek_playermatchdetail_hi m\n    JOIN hero_release_dates r ON m.characterid = r.hero_id\n    WHERE m.tdbank_imp_date >= r.release_date\n      AND m.tdbank_imp_date < DATE_FORMAT(DATE_ADD(CAST(r.release_date AS DATE), INTERVAL 7 DAY), '%Y%m%d')\n      AND m.provisioningflowid NOT IN ('custom', 'tutorial', 'training')\n),\nhero_selection_counts AS (\n    SELECT \n        hero_id,\n        subject AS player_id,\n        COUNT(*) AS selection_count\n    FROM first_week_matches\n    GROUP BY hero_id, player_id\n),\nhero_player_stats AS (\n    SELECT \n        hero_id,\n        COUNT(DISTINCT CASE WHEN selection_count > 3 THEN player_id END) AS players_over_3,\n        COUNT(DISTINCT CASE WHEN selection_count > 10 THEN player_id END) AS players_over_10,\n        COUNT(DISTINCT player_id) AS total_players\n    FROM hero_selection_counts\n    GROUP BY hero_id\n)\nSELECT \n    hero_id,\n    players_over_3,\n    players_over_10,\n    total_players,\n    CAST(players_over_3 AS DOUBLE) / total_players AS pct_over_3,\n    CAST(players_over_10 AS DOUBLE) / total_players AS pct_over_10\nFROM hero_player_stats\nWHERE total_players > 0;",
         "复杂度": "中等",
         "table_list": [
             "dwd_argothek_playermatchdetail_hi"
@@ -231,7 +231,7 @@
     {
         "sql_id": "sql_26",
         "question": "统计：2024-01-01到2024-12-16，闪了敌人x次、闪了队友x次，除自定义模式、新手、训练场外所有模式。\n输出：闪了敌人x次、闪了队友x次",
-        "sql": "",
+        "sql": "SELECT \n    SUM(CASE WHEN allianceforcefectedtargets = 'enemy' THEN amount ELSE 0 END) AS enemy_dodges,\n    SUM(CASE WHEN allianceforcefectedtargets = 'ally' THEN amount ELSE 0 END) AS ally_dodges\nFROM dwd_argothek_abilityinfo_effects_hi a\nJOIN dwd_argothek_matchdetails_hi m ON a.matchinfomatchid = m.matchid\nWHERE a.dteventtime >= '2024-01-01' AND a.dteventtime <= '2024-12-16'\n  AND m.provisioningflowid = 'Matchmaking'\n  AND a.tag = 'dodge';",
         "复杂度": "中等",
         "table_list": [
             "dwd_argothek_matchdetails_hi",
@@ -242,7 +242,7 @@
     {
         "sql_id": "sql_27",
         "question": "统计：2024-01-01到2024-12-16，购买阶段出现了x次武器代买，除自定义模式、新手、训练场外所有模式。\n输出：武器代买次数",
-        "sql": "",
+        "sql": "SELECT COUNT(*) AS 武器代买次数 FROM dwd_argothek_apinventorymovementlog_hi WHERE dteventtime >= '2024-01-01' AND dteventtime <= '2024-12-16' AND transactiontype = 'FulfillRequest' AND matchinfogamemode NOT IN ('Custom', 'Newbie', 'Training');",
         "复杂度": "中等",
         "table_list": [
             "dwd_argothek_matchdetails_hi",
@@ -253,7 +253,7 @@
     {
         "sql_id": "sql_29",
         "question": "统计周期：2024.6.18至2025年3月30日\n输出：自然周（20240617、20240624、...、20250324），玩法名称，周平均日均参与用户数，周平均日均参与率，周平均日均参与场次\n\n参与率：玩法参与用户数 / 活跃用户数\n周平均日均参与场次：每天不同玩法平均对局数再按周求平均",
-        "sql": "",
+        "sql": "WITH date_range AS (\n    SELECT DISTINCT dtstatdate\n    FROM dws_jordass_mode_roundrecord_di\n    WHERE dtstatdate BETWEEN '20240618' AND '20250330'\n),\nweekly_dates AS (\n    SELECT \n        dtstatdate,\n        DATE_TRUNC('week', STR_TO_DATE(dtstatdate, '%Y%m%d')) AS week_start_date\n    FROM date_range\n),\nweekly_participation AS (\n    SELECT \n        wd.week_start_date,\n        dm.modename,\n        COUNT(DISTINCT dm.vplayerid) AS weekly_unique_players,\n        COUNT(dm.roundcnt) AS total_rounds,\n        COUNT(DISTINCT dl.vplayerid) AS weekly_active_users\n    FROM weekly_dates wd\n    JOIN dws_jordass_mode_roundrecord_di dm ON wd.dtstatdate = dm.dtstatdate\n    LEFT JOIN dws_jordass_login_di dl ON dm.dtstatdate = dl.dtstatdate AND dm.vplayerid = dl.vplayerid\n    GROUP BY wd.week_start_date, dm.modename\n)\nSELECT \n    DATE_FORMAT(week_start_date, '%Y%m%d') AS natural_week,\n    modename AS mode_name,\n    AVG(weekly_unique_players) AS avg_daily_participants,\n    AVG(CAST(weekly_unique_players AS DOUBLE) / NULLIF(weekly_active_users, 0)) AS avg_daily_participation_rate,\n    AVG(total_rounds) AS avg_daily_rounds\nFROM weekly_participation\nGROUP BY week_start_date, modename\nORDER BY natural_week, modename;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_di",
@@ -264,7 +264,7 @@
     {
         "sql_id": "sql_31",
         "question": "统计20250217-20250318协作平台活跃但是没有在协作玩法活跃用户的主玩玩法分布\n输出：主玩玩法（传统模式、休闲模式、...、生存模式）、人数",
-        "sql": "",
+        "sql": "WITH platform_active_users AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_matchlog_stat_di\n    WHERE dtstatdate BETWEEN '20250217' AND '20250318'\n),\nugc_inactive_users AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_matchlog_stat_di\n    WHERE dtstatdate BETWEEN '20250217' AND '20250318'\n      AND imode != 255\n),\nmain_play_modes AS (\n    SELECT \n        vplayerid,\n        `mode`,\n        modename,\n        submode,\n        submodename,\n        `map`,\n        mapname,\n        CASE\n            WHEN modename = '传统模式' AND submodename LIKE 'CG%' AND mapname = '群屿' THEN '主题群屿'\n            WHEN modename = '传统模式' AND mapname = '群屿' THEN '传统群屿'\n            WHEN modename = '传统模式' AND mapname = '假日群岛' THEN '假日群岛'\n            WHEN modename = '传统模式' AND mapname = '荣耀之城' THEN '荣耀之城'\n            WHEN submodename = '广域战场模式' THEN '广域战场'\n            WHEN submodename = '极能形态模式' THEN '极能形态'\n            WHEN modename = '组队竞技' THEN '组竞'\n            WHEN modename = '休闲模式' THEN '休闲'\n            WHEN modename = '乐园' THEN '乐园'\n            WHEN modename = '领地' THEN '领地'\n            WHEN modename = '广阔天地' THEN '广阔天地'\n            WHEN modename = '生存模式' THEN '隧道'\n            ELSE '其他模式'\n        END AS main_mode\n    FROM dws_jordass_mode_roundrecord_di\n    WHERE dtstatdate BETWEEN '20250217' AND '20250318'\n)\nSELECT \n    main_mode AS 主玩玩法,\n    COUNT(DISTINCT m.vplayerid) AS 人数\nFROM main_play_modes m\nJOIN platform_active_users p ON m.vplayerid = p.vplayerid\nLEFT JOIN ugc_inactive_users u ON m.vplayerid = u.vplayerid\nWHERE u.vplayerid IS NULL\nGROUP BY main_mode\nORDER BY 人数 DESC;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_matchlog_stat_di",
@@ -276,7 +276,7 @@
     {
         "sql_id": "sql_32",
         "question": "统计2023/1/14-2023/1/28\n2024/2/2-2024/2/16\n2025/1/21-2025/2/4\n每天所有玩法的参与人数，总时长\n输出：日期（20230101、20230102、...、20230128、20240202、...、20250204），参与人数，时长（分钟）",
-        "sql": "",
+        "sql": "SELECT \n    dtstatdate AS 日期,\n    COUNT(DISTINCT vplayerid) AS 参与人数,\n    SUM(roundtime) / 60 AS 时长_分钟\nFROM dws_jordass_mode_roundrecord_di\nWHERE dtstatdate IN (\n    '20230114','20230115','20230116','20230117','20230118','20230119','20230120','20230121','20230122','20230123','20230124','20230125','20230126','20230127','20230128',\n    '20240202','20240203','20240204','20240205','20240206','20240207','20240208','20240209','20240210','20240211','20240212','20240213','20240214','20240215','20240216',\n    '20250121','20250122','20250123','20250124','20250125','20250126','20250127','20250128','20250129','20250130','20250131','20250201','20250202','20250203','20250204'\n)\nAND modename IN ('传统模式','休闲模式','组队竞技','领地','乐园','广阔天地','创意创作间','生存模式')\nGROUP BY dtstatdate\nORDER BY dtstatdate;",
         "复杂度": "简单",
         "table_list": [
             "dws_jordass_mode_roundrecord_di"
@@ -286,7 +286,7 @@
     {
         "sql_id": "sql_40",
         "question": "sql_40时间段2024.3.1-2024.6.30分月看用户当月在砺刃的 新进、回流、轻度留存、中度留存、重度留存\n\n输出：月份(202403、...、202406)、新进人数、回流人数、轻度留存人数、中度留存人数、重度留存人数\n",
-        "sql": "",
+        "sql": "WITH months AS (\n    SELECT '202403' AS month, '20240331' AS month_end, '20240229' AS prev_month_end UNION ALL\n    SELECT '202404', '20240430', '20240331' UNION ALL\n    SELECT '202405', '20240531', '20240430' UNION ALL\n    SELECT '202406', '20240630', '20240531'\n),\nmonthly_active AS (\n    SELECT \n        SUBSTRING(dtstatdate, 1, 6) AS month,\n        vplayerid,\n        COUNT(DISTINCT dtstatdate) AS active_days\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20240301' AND '20240630'\n      AND platid = 255\n    GROUP BY SUBSTRING(dtstatdate, 1, 6), vplayerid\n),\nnew_players AS (\n    SELECT \n        m.month,\n        COUNT(DISTINCT l.vplayerid) AS new_count\n    FROM dws_jordass_login_df l\n    JOIN months m ON l.dtstatdate = m.month_end\n    WHERE l.platid = 255\n      AND l.dregdate >= m.month\n      AND l.dregdate <= m.month_end\n    GROUP BY m.month\n),\nreturning_players AS (\n    SELECT\n        m.month,\n        COUNT(DISTINCT l.vplayerid) AS returning_count\n    FROM dws_jordass_login_df l\n    JOIN months m ON l.dtstatdate = m.month_end\n    LEFT JOIN dws_jordass_login_df l2 ON l.vplayerid = l2.vplayerid \n        AND l2.dtstatdate = m.prev_month_end\n        AND l2.platid = 255\n    WHERE l.platid = 255\n      AND SUBSTRING(l.cbitmap, 1, 1) = '1'\n      AND (l2.vplayerid IS NULL OR SUBSTRING(l2.cbitmap, 1, 1) = '0')\n    GROUP BY m.month\n),\nretention_levels AS (\n    SELECT\n        ma.month,\n        COUNT(DISTINCT CASE WHEN ma.active_days BETWEEN 1 AND 7 THEN ma.vplayerid END) AS light_retained,\n        COUNT(DISTINCT CASE WHEN ma.active_days BETWEEN 8 AND 14 THEN ma.vplayerid END) AS medium_retained,\n        COUNT(DISTINCT CASE WHEN ma.active_days >= 15 THEN ma.vplayerid END) AS heavy_retained\n    FROM monthly_active ma\n    GROUP BY ma.month\n),\nall_months AS (\n    SELECT month FROM months\n)\nSELECT\n    am.month,\n    IFNULL(np.new_count, 0) AS new_players,\n    IFNULL(rp.returning_count, 0) AS returning_players,\n    IFNULL(rl.light_retained, 0) AS light_retention,\n    IFNULL(rl.medium_retained, 0) AS medium_retention,\n    IFNULL(rl.heavy_retained, 0) AS heavy_retention\nFROM all_months am\nLEFT JOIN new_players np ON am.month = np.month\nLEFT JOIN returning_players rp ON am.month = rp.month\nLEFT JOIN retention_levels rl ON am.month = rl.month\nORDER BY am.month;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_di",
@@ -297,7 +297,7 @@
     {
         "sql_id": "sql_41",
         "question": "统计2024.1.1～1.3，每天活跃玩家数\n输出：统计日期(20240101、20240102、20240103)、玩家数",
-        "sql": "",
+        "sql": "SELECT dtstatdate AS 统计日期, COUNT(DISTINCT vplayerid) AS 玩家数 FROM dws_jordass_login_di WHERE dtstatdate IN ('20240101', '20240102', '20240103') GROUP BY dtstatdate ORDER BY dtstatdate;",
         "复杂度": "简单",
         "table_list": [
             "dws_jordass_login_di"
@@ -307,7 +307,7 @@
     {
         "sql_id": "sql_42",
         "question": "统计2021.11.1-2021.11.30每天按extarg2中用\"_\"分割的第2位的值包含(8,16,17)看点击情况\n输出：日期，按extarg2中用\"_\"分割的第2位，人数，次数",
-        "sql": "",
+        "sql": "SELECT \n    dtstatdate AS 日期,\n    SPLIT_PART(extarg2, '_', 2) AS extarg2_second_part,\n    COUNT(DISTINCT vplayerid) AS 人数,\n    COUNT(*) AS 次数\nFROM dws_jordass_buttonpress_pre_di\nWHERE dtstatdate BETWEEN '20211101' AND '20211130'\n  AND SPLIT_PART(extarg2, '_', 2) IN ('8', '16', '17')\nGROUP BY dtstatdate, SPLIT_PART(extarg2, '_', 2)\nORDER BY dtstatdate, extarg2_second_part;",
         "复杂度": "简单",
         "table_list": [
             "dws_jordass_buttonpress_pre_di"
@@ -317,7 +317,7 @@
     {
         "sql_id": "sql_43",
         "question": "统计2025.1.1-2025.1.31期间活跃度分布\n输出：活跃度（轻度、中度、重度）、玩家数\n\n活跃度：轻度1-5天，中度6-15天，重度大于16天",
-        "sql": "",
+        "sql": "SELECT\n  CASE\n    WHEN active_days BETWEEN 1 AND 5 THEN '轻度'\n    WHEN active_days BETWEEN 6 AND 15 THEN '中度'\n    WHEN active_days >= 16 THEN '重度'\n  END AS 活跃度,\n  COUNT(DISTINCT vplayerid) AS 玩家数\nFROM (\n  SELECT\n    vplayerid,\n    SUM(ilogincount) AS active_days\n  FROM dws_jordass_login_di\n  WHERE dtstatdate BETWEEN '20250101' AND '20250131'\n  GROUP BY vplayerid\n) t\nGROUP BY\n  CASE\n    WHEN active_days BETWEEN 1 AND 5 THEN '轻度'\n    WHEN active_days BETWEEN 6 AND 15 THEN '中度'\n    WHEN active_days >= 16 THEN '重度'\n  END;",
         "复杂度": "简单",
         "table_list": [
             "dws_jordass_login_di"
@@ -327,7 +327,7 @@
     {
         "sql_id": "sql_44",
         "question": "统计2024.01.01-2024.12.31期间，付费用户的付费区间对应的付费人数和付费金额\n输出：付费区间(小R、中R、大R、超R、未知)、付费人数、付费金额（元）\n\n付费区间：小R小于等于12，中R(12,60]，大R(60,180]，超R(180+)",
-        "sql": "",
+        "sql": "SELECT \n    CASE \n        WHEN imoney <= 12 THEN '小R'\n        WHEN imoney > 12 AND imoney <= 60 THEN '中R'\n        WHEN imoney > 60 AND imoney <= 180 THEN '大R'\n        WHEN imoney > 180 THEN '超R'\n        ELSE '未知'\n    END AS 付费区间,\n    COUNT(DISTINCT vplayerid) AS 付费人数,\n    SUM(imoney) AS 付费金额_元\nFROM dws_jordass_water_di\nWHERE dtstatdate BETWEEN '20240101' AND '20241231'\nGROUP BY \n    CASE \n        WHEN imoney <= 12 THEN '小R'\n        WHEN imoney > 12 AND imoney <= 60 THEN '中R'\n        WHEN imoney > 60 AND imoney <= 180 THEN '大R'\n        WHEN imoney > 180 THEN '超R'\n        ELSE '未知'\n    END\nORDER BY \n    MIN(imoney);",
         "复杂度": "简单",
         "table_list": [
             "dws_jordass_water_di"
@@ -337,7 +337,7 @@
     {
         "sql_id": "sql_47",
         "question": "统计2023.07.01-08.31期间，每天微信活跃用户在2023.09.1-09.21期间流失并且是2023.07.01-08.31有付费的用户\n输出：人数",
-        "sql": "",
+        "sql": "WITH wechat_active_users AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20230701' AND '20230831'\n      AND vgameappid = 'wx'\n),\npaid_users_during_active_period AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_water_di\n    WHERE dtstatdate BETWEEN '20230701' AND '20230831'\n      AND vplayerid IN (SELECT vplayerid FROM wechat_active_users)\n),\nchurned_users AS (\n    SELECT vplayerid\n    FROM wechat_active_users\n    WHERE vplayerid NOT IN (\n        SELECT DISTINCT vplayerid\n        FROM dws_jordass_login_di\n        WHERE dtstatdate BETWEEN '20230901' AND '20230921'\n    )\n)\nSELECT COUNT(DISTINCT cu.vplayerid) AS user_count\nFROM churned_users cu\nJOIN paid_users_during_active_period pu ON cu.vplayerid = pu.vplayerid;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_water_di",
@@ -348,7 +348,7 @@
     {
         "sql_id": "sql_50",
         "question": "统计2024.10.1-2024.10.31期间点击400211，点击400212，点击400211及400212的重合用户作为用户类型，看不同性别、砺刃活跃度和乐园活跃度情况\n\n输出：用户类型（400211、400212、400211&400212、other），游戏角色性别（male、female、other）、乐园活跃度（light、medium、heavy、other）、砺刃活跃度（light、medium、heavy、other），人数\n\n乐园跟砺刃的活跃度： 轻度1-4天；中度5-15天；重度>=16天",
-        "sql": "",
+        "sql": "WITH button_clicks AS (\n    SELECT \n        vplayerid,\n        MAX(CASE WHEN buttontype = '400211' THEN 1 ELSE 0 END) AS clicked_400211,\n        MAX(CASE WHEN buttontype = '400212' THEN 1 ELSE 0 END) AS clicked_400212\n    FROM dws_jordass_buttonpress_pre_di\n    WHERE dtstatdate BETWEEN '20241001' AND '20241031'\n      AND buttontype IN ('400211', '400212')\n    GROUP BY vplayerid\n),\nuser_types AS (\n    SELECT \n        vplayerid,\n        CASE \n            WHEN clicked_400211 = 1 AND clicked_400212 = 1 THEN '400211&400212'\n            WHEN clicked_400211 = 1 THEN '400211'\n            WHEN clicked_400212 = 1 THEN '400212'\n            ELSE 'other'\n        END AS user_type\n    FROM button_clicks\n),\njordass_activity AS (\n    SELECT \n        vplayerid,\n        COUNT(DISTINCT dtstatdate) AS active_days\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20241001' AND '20241031'\n    GROUP BY vplayerid\n),\nleyuan_activity AS (\n    SELECT \n        vplayerid,\n        COUNT(DISTINCT dtstatdate) AS active_days\n    FROM dws_jordass_matchlog_stat_di\n    WHERE dtstatdate BETWEEN '20241001' AND '20241031'\n    GROUP BY vplayerid\n),\nplayer_info AS (\n    SELECT DISTINCT\n        a.vplayerid,\n        CASE \n            WHEN b.gender = 1 THEN 'male'\n            WHEN b.gender = 2 THEN 'female'\n            ELSE 'other'\n        END AS gender,\n        CASE \n            WHEN c.active_days >= 16 THEN 'heavy'\n            WHEN c.active_days >= 5 THEN 'medium'\n            WHEN c.active_days >= 1 THEN 'light'\n            ELSE 'other'\n        END AS jordass_activity_level,\n        CASE \n            WHEN d.active_days >= 16 THEN 'heavy'\n            WHEN d.active_days >= 5 THEN 'medium'\n            WHEN d.active_days >= 1 THEN 'light'\n            ELSE 'other'\n        END AS leyuan_activity_level\n    FROM user_types a\n    LEFT JOIN dwd_jordass_playerlogin_hi b ON a.vplayerid = b.vplayerid\n    LEFT JOIN jordass_activity c ON a.vplayerid = c.vplayerid\n    LEFT JOIN leyuan_activity d ON a.vplayerid = d.vplayerid\n)\nSELECT \n    ut.user_type,\n    COALESCE(pi.gender, 'other') AS gender,\n    COALESCE(pi.jordass_activity_level, 'other') AS jordass_activity_level,\n    COALESCE(pi.leyuan_activity_level, 'other') AS leyuan_activity_level,\n    COUNT(*) AS user_count\nFROM user_types ut\nLEFT JOIN player_info pi ON ut.vplayerid = pi.vplayerid\nGROUP BY ut.user_type, pi.gender, pi.jordass_activity_level, pi.leyuan_activity_level\nORDER BY ut.user_type, pi.gender, pi.jordass_activity_level, pi.leyuan_activity_level;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_matchlog_stat_di",
@@ -361,7 +361,7 @@
     {
         "sql_id": "sql_51",
         "question": "统计4个时间段灰度玩法参与情况\n\n时间段1：周期1：2024.11.08-11.21，周期2：2024.11.22-12.4\n时间段2：周期1：2024.11.10-11.23，周期2：2024.11.24-12.4\n时间段3：周期1：2024.11.15-11.28，周期2：2024.11.29-12.4\n时间段4：周期1：2024.11.17-11.30，周期2：2024.12.1-12.4\n输出：时间段（时间段1、时间段2、时间段3、时间段4），第1个周期进入过灰度玩法的用户数，两个周期都进入过灰度的用户数",
-        "sql": "",
+        "sql": "WITH time_periods AS (\n    SELECT '时间段1' AS period_name, '20241108' AS start_date1, '20241121' AS end_date1, '20241122' AS start_date2, '20241204' AS end_date2\n    UNION ALL\n    SELECT '时间段2' AS period_name, '20241110' AS start_date1, '20241123' AS end_date1, '20241124' AS start_date2, '20241204' AS end_date2\n    UNION ALL\n    SELECT '时间段3' AS period_name, '20241115' AS start_date1, '20241128' AS end_date1, '20241129' AS start_date2, '20241204' AS end_date2\n    UNION ALL\n    SELECT '时间段4' AS period_name, '20241117' AS start_date1, '20241130' AS end_date1, '20241201' AS start_date2, '20241204' AS end_date2\n),\ngray_users_period1 AS (\n    SELECT DISTINCT\n        tp.period_name,\n        a.vplayerid\n    FROM time_periods tp\n    JOIN dws_jordass_buttonpress_pre_di a ON a.dtstatdate BETWEEN tp.start_date1 AND tp.end_date1\n),\ngray_users_period2 AS (\n    SELECT DISTINCT\n        tp.period_name,\n        a.vplayerid\n    FROM time_periods tp\n    JOIN dws_jordass_buttonpress_pre_di a ON a.dtstatdate BETWEEN tp.start_date2 AND tp.end_date2\n),\nboth_periods AS (\n    SELECT \n        p1.period_name,\n        COUNT(DISTINCT p1.vplayerid) AS users_in_period1,\n        COUNT(DISTINCT CASE WHEN p2.vplayerid IS NOT NULL THEN p1.vplayerid END) AS users_in_both_periods\n    FROM gray_users_period1 p1\n    LEFT JOIN gray_users_period2 p2 ON p1.period_name = p2.period_name AND p1.vplayerid = p2.vplayerid\n    GROUP BY p1.period_name\n)\nSELECT \n    period_name AS 时间段,\n    users_in_period1 AS 第1个周期进入过灰度玩法的用户数,\n    users_in_both_periods AS 两个周期都进入过灰度的用户数\nFROM both_periods\nORDER BY period_name;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_buttonpress_pre_di",
@@ -372,7 +372,7 @@
     {
         "sql_id": "sql_52",
         "question": "2024.10.01-10.08期间参与了参与率在后20%子玩法的用户在周期内每天参与所有乐园子玩法的数量分布\n数量分布：1，2，3，4，5，6-10，11-20，21以上\n输出：统计日期(20241001、...、20241008)、数量分布、人数\n\n参与率：每个子玩法的总对局数从高到低排名",
-        "sql": "",
+        "sql": "WITH mode_participation AS (\n    SELECT \n        dtstatdate,\n        imode,\n        SUM(icnt) AS total_matches\n    FROM dws_jordass_matchlog_stat_di\n    WHERE dtstatdate BETWEEN '20241001' AND '20241008'\n      AND imode != 255\n    GROUP BY dtstatdate, imode\n),\nmode_ranking AS (\n    SELECT \n        dtstatdate,\n        imode,\n        total_matches,\n        RANK() OVER (PARTITION BY dtstatdate ORDER BY total_matches DESC) AS rnk,\n        COUNT(*) OVER (PARTITION BY dtstatdate) AS total_modes\n    FROM mode_participation\n),\nbottom_20_modes AS (\n    SELECT \n        dtstatdate,\n        imode\n    FROM mode_ranking\n    WHERE rnk > total_modes * 0.8\n),\ntarget_players AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_matchlog_stat_di a\n    INNER JOIN bottom_20_modes b\n        ON a.dtstatdate = b.dtstatdate AND a.imode = b.imode\n    WHERE a.dtstatdate BETWEEN '20241001' AND '20241008'\n),\nplayer_daily_modes AS (\n    SELECT \n        a.dtstatdate,\n        a.vplayerid,\n        COUNT(DISTINCT a.imode) AS participated_modes_count\n    FROM dws_jordass_matchlog_stat_di a\n    INNER JOIN target_players b ON a.vplayerid = b.vplayerid\n    WHERE a.dtstatdate BETWEEN '20241001' AND '20241008'\n      AND a.imode != 255\n    GROUP BY a.dtstatdate, a.vplayerid\n),\ndistribution_buckets AS (\n    SELECT \n        dtstatdate,\n        vplayerid,\n        participated_modes_count,\n        CASE \n            WHEN participated_modes_count = 1 THEN '1'\n            WHEN participated_modes_count = 2 THEN '2'\n            WHEN participated_modes_count = 3 THEN '3'\n            WHEN participated_modes_count = 4 THEN '4'\n            WHEN participated_modes_count = 5 THEN '5'\n            WHEN participated_modes_count BETWEEN 6 AND 10 THEN '6-10'\n            WHEN participated_modes_count BETWEEN 11 AND 20 THEN '11-20'\n            WHEN participated_modes_count >= 21 THEN '21以上'\n        END AS count_bucket\n    FROM player_daily_modes\n)\nSELECT \n    dtstatdate AS 统计日期,\n    count_bucket AS 数量分布,\n    COUNT(vplayerid) AS 人数\nFROM distribution_buckets\nGROUP BY dtstatdate, count_bucket\nORDER BY dtstatdate, \n         CASE count_bucket\n             WHEN '1' THEN 1\n             WHEN '2' THEN 2\n             WHEN '3' THEN 3\n             WHEN '4' THEN 4\n             WHEN '5' THEN 5\n             WHEN '6-10' THEN 6\n             WHEN '11-20' THEN 7\n             WHEN '21以上' THEN 8\n         END;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_matchlog_stat_di"
@@ -382,7 +382,7 @@
     {
         "sql_id": "sql_53",
         "question": "统计2024.10.21-11.21的期间内的非新注册活跃用户并且在2024.10.14-10.20没有活跃的回流用户量级，以及这些用户在10.20的\n1.前8-14天 (10.7-10.13)有活跃的用户\n2.前15-29天有活跃的用户\n3.前30-59天有活跃的用户\n4.前60-179天有活跃的用户\n5.前180-364天有活跃的用户\n输出：回流用户量级，前8-14天有活跃的用户量级，前15-29天有活跃的用户量级，前30-59天有活跃的用户量级，前60-179天有活跃的用户量级，前180-364天有活跃的用户量级\n\n",
-        "sql": "",
+        "sql": "WITH \n-- Step 1: 获取目标时间段内活跃用户（排除新用户）\ntarget_active_users AS (\n    SELECT \n        vplayerid,\n        dtstatdate,\n        dregdate,\n        cbitmap\n    FROM dws_jordass_login_df\n    WHERE dtstatdate BETWEEN '20241021' AND '20241121'\n      AND platid = 255\n      AND dregdate < '20241021' -- 非新用户\n),\n-- Step 2: 筛选在 10月14日至10月20日之间未活跃的用户（即潜在回流用户）\nnot_active_in_ref_period AS (\n    SELECT \n        vplayerid\n    FROM target_active_users\n    WHERE NOT (\n        SUBSTRING(cbitmap, 1 + (20241021 - 20241021), 7) REGEXP '1' -- 检查10.14-10.20是否有活跃\n    )\n),\n-- Step 3: 回流用户定义为：在观察窗口活跃但在参考期未活跃\nreturning_users AS (\n    SELECT DISTINCT t.vplayerid\n    FROM target_active_users t\n    JOIN not_active_in_ref_period n ON t.vplayerid = n.vplayerid\n),\n-- Step 4: 计算各类历史活跃情况\nactive_history_stats AS (\n    SELECT \n        r.vplayerid,\n        -- 前8-14天活跃 (10.7 - 10.13): bitmap index from day 8 to 14\n        CASE WHEN SUBSTRING(t.cbitmap, 8, 7) REGEXP '1' THEN 1 ELSE 0 END AS active_8_to_14,\n        -- 前15-29天活跃 (9.22 - 10.6): bitmap index from day 15 to 29\n        CASE WHEN SUBSTRING(t.cbitmap, 15, 15) REGEXP '1' THEN 1 ELSE 0 END AS active_15_to_29,\n        -- 前30-59天活跃 (9.2 - 9.21): bitmap index from day 30 to 59\n        CASE WHEN SUBSTRING(t.cbitmap, 30, 30) REGEXP '1' THEN 1 ELSE 0 END AS active_30_to_59,\n        -- 前60-179天活跃 (7.4 - 8.31): bitmap index from day 60 to 179\n        CASE WHEN SUBSTRING(t.cbitmap, 60, 120) REGEXP '1' THEN 1 ELSE 0 END AS active_60_to_179,\n        -- 前180-364天活跃 (2023.10.22 - 2024.4.21): bitmap index beyond current scope?\n        -- Since we only have up to 100 bits, this part may be out of range depending on actual data.\n        -- Assuming max is 100 bits, so last possible is around 3 months ago.\n        -- Let's consider it as \"beyond 100-bit window\", set to 0 if outside.\n        0 AS active_180_to_364 -- Not feasible with 100-bit cbitmap unless extended logic applied\n    FROM returning_users r\n    JOIN target_active_users t ON r.vplayerid = t.vplayerid\n)\n\nSELECT \n    COUNT(*) AS returning_user_count,\n    SUM(active_8_to_14) AS active_8_to_14_count,\n    SUM(active_15_to_29) AS active_15_to_29_count,\n    SUM(active_30_to_59) AS active_30_to_59_count,\n    SUM(active_60_to_179) AS active_60_to_179_count,\n    SUM(active_180_to_364) AS active_180_to_364_count\nFROM active_history_stats;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_di",
@@ -393,7 +393,7 @@
     {
         "sql_id": "sql_54",
         "question": "统计2024.9.20到2024.10.20期间matchmode=1003 每种玩法参与周期内的日均参与人数和日均玩法次留\n输出：玩法、上线日期、下线日期、日均参与人数、日均玩法次留",
-        "sql": "",
+        "sql": "WITH daily_stats AS (\n    SELECT \n        SUBSTRING(dwd_hi.tdbank_imp_date, 1, 8) AS dtstatdate,\n        COUNT(DISTINCT dwd_hi.vplayerid) AS dau,\n        COUNT(DISTINCT CASE WHEN dws_df.cbitmap IS NOT NULL AND SUBSTRING(dws_df.cbitmap, 2, 1) = '1' THEN dwd_hi.vplayerid END) AS ret_1d_users\n    FROM \n        dwd_jordass_player_matchrecord_hi dwd_hi\n    LEFT JOIN \n        dws_jordass_playermatchrecord_stat_df dws_df \n        ON dwd_hi.vplayerid = dws_df.vplayerid \n        AND SUBSTRING(dwd_hi.tdbank_imp_date, 1, 8) = dws_df.dtstatdate\n    WHERE \n        dwd_hi.tdbank_imp_date BETWEEN '2024092000' AND '2024102023'\n        AND dwd_hi.matchmode = 1003\n    GROUP BY \n        SUBSTRING(dwd_hi.tdbank_imp_date, 1, 8)\n)\nSELECT \n    dim_modename.modename AS 玩法,\n    dim_modename.startdate AS 上线日期,\n    dim_modename.enddate AS 下线日期,\n    ROUND(SUM(daily_stats.dau) / COUNT(daily_stats.dtstatdate), 2) AS 日均参与人数,\n    ROUND(SUM(daily_stats.ret_1d_users) / SUM(daily_stats.dau), 4) AS 日均玩法次留\nFROM \n    daily_stats\nCROSS JOIN \n    dim_jordass_imode_leyuan_nf dim_modename\nWHERE \n    dim_modename.imode = 1003\nGROUP BY \n    dim_modename.modename, dim_modename.startdate, dim_modename.enddate;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_jordass_player_matchrecord_hi",
@@ -404,7 +404,7 @@
     {
         "sql_id": "sql_55",
         "question": "统计：2024.11.1-11.30，乐园当天往前上线180天以内的子玩法，按七天平均 参与率+次留+七留 算一个总排名，需要每天都提供一个榜单\n\n输出，统计日期、乐园各玩法名、平均参与率排名、次留排名、七留排名、总排名",
-        "sql": "",
+        "sql": "WITH \n-- Step 1: Get all submodes and their online dates\nfiltered_submodes AS (\n    SELECT \n        matchsubmodegroup,\n        matchsubmodegroupname,\n        onlinedate\n    FROM dim_jordass_submodeonline_nf\n    WHERE matchsubmodegroup != 255\n),\n-- Step 2: Generate date range\ndate_range AS (\n    SELECT dtstatdate\n    FROM dws_jordass_matchlog_stat_di\n    WHERE dtstatdate BETWEEN '20241101' AND '20241130'\n    GROUP BY dtstatdate\n),\n-- Step 3: Calculate daily submode DAU and retention metrics\ndaily_mode_stats AS (\n    SELECT \n        t1.dtstatdate,\n        t1.imode AS matchsubmodegroup,\n        COUNT(DISTINCT t1.vplayerid) AS submode_dau,\n        COUNT(DISTINCT CASE WHEN t2.vplayerid IS NOT NULL THEN t1.vplayerid END) AS next_day_retained,\n        COUNT(DISTINCT CASE WHEN t7.vplayerid IS NOT NULL THEN t1.vplayerid END) AS seven_day_retained\n    FROM dws_jordass_matchlog_stat_di t1\n    LEFT JOIN dws_jordass_matchlog_stat_di t2\n      ON t1.vplayerid = t2.vplayerid\n     AND t1.imode = t2.imode\n     AND t2.dtstatdate = DATE_FORMAT(DATE_ADD(STR_TO_DATE(t1.dtstatdate, '%Y%m%d'), INTERVAL 1 DAY), '%Y%m%d')\n    LEFT JOIN dws_jordass_matchlog_stat_di t7\n      ON t1.vplayerid = t7.vplayerid\n     AND t1.imode = t7.imode\n     AND t7.dtstatdate = DATE_FORMAT(DATE_ADD(STR_TO_DATE(t1.dtstatdate, '%Y%m%d'), INTERVAL 7 DAY), '%Y%m%d')\n    WHERE t1.dtstatdate BETWEEN '20241101' AND '20241130'\n      AND t1.imode != 255\n    GROUP BY t1.dtstatdate, t1.imode\n),\n-- Step 4: Calculate overall DAU for participation rate\ndaily_overall_dau AS (\n    SELECT \n        dtstatdate,\n        COUNT(DISTINCT vplayerid) AS overall_dau\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20241101' AND '20241130'\n      AND platid = 255\n    GROUP BY dtstatdate\n),\n-- Step 5: Combine metrics and calculate rates\ndaily_metrics AS (\n    SELECT \n        s.dtstatdate,\n        s.matchsubmodegroup,\n        s.submode_dau,\n        d.overall_dau,\n        s.submode_dau / NULLIF(d.overall_dau, 0) AS participation_rate,\n        s.next_day_retained / NULLIF(s.submode_dau, 0) AS next_day_retention_rate,\n        s.seven_day_retained / NULLIF(s.submode_dau, 0) AS seven_day_retention_rate\n    FROM daily_mode_stats s\n    JOIN daily_overall_dau d ON s.dtstatdate = d.dtstatdate\n),\n-- Step 6: Filter submodes online within 180 days before each stat date\nvalid_submodes AS (\n    SELECT \n        d.dtstatdate,\n        m.matchsubmodegroup,\n        m.matchsubmodegroupname\n    FROM date_range d\n    CROSS JOIN filtered_submodes m\n    WHERE DATEDIFF(STR_TO_DATE(d.dtstatdate, '%Y%m%d'), STR_TO_DATE(m.onlinedate, '%Y%m%d')) BETWEEN 0 AND 180\n),\n-- Step 7: Calculate 7-day rolling averages\nseven_day_averages AS (\n    SELECT \n        v.dtstatdate,\n        v.matchsubmodegroup,\n        v.matchsubmodegroupname,\n        AVG(COALESCE(d.participation_rate, 0)) OVER (\n            PARTITION BY v.matchsubmodegroup \n            ORDER BY v.dtstatdate \n            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n        ) AS avg_participation_rate,\n        AVG(COALESCE(d.next_day_retention_rate, 0)) OVER (\n            PARTITION BY v.matchsubmodegroup \n            ORDER BY v.dtstatdate \n            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n        ) AS avg_next_day_retention_rate,\n        AVG(COALESCE(d.seven_day_retention_rate, 0)) OVER (\n            PARTITION BY v.matchsubmodegroup \n            ORDER BY v.dtstatdate \n            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n        ) AS avg_seven_day_retention_rate\n    FROM valid_submodes v\n    LEFT JOIN daily_metrics d \n      ON v.dtstatdate = d.dtstatdate \n     AND v.matchsubmodegroup = d.matchsubmodegroup\n),\n-- Step 8: Rank modes by each metric\nranked_modes AS (\n    SELECT \n        dtstatdate,\n        matchsubmodegroup,\n        matchsubmodegroupname,\n        ROW_NUMBER() OVER (PARTITION BY dtstatdate ORDER BY avg_participation_rate DESC) AS participation_rank,\n        ROW_NUMBER() OVER (PARTITION BY dtstatdate ORDER BY avg_next_day_retention_rate DESC) AS next_day_retention_rank,\n        ROW_NUMBER() OVER (PARTITION BY dtstatdate ORDER BY avg_seven_day_retention_rate DESC) AS seven_day_retention_rank\n    FROM seven_day_averages\n),\n-- Step 9: Compute total ranking\nfinal_ranks AS (\n    SELECT \n        dtstatdate,\n        matchsubmodegroupname,\n        participation_rank,\n        next_day_retention_rank,\n        seven_day_retention_rank,\n        ROW_NUMBER() OVER (\n            PARTITION BY dtstatdate \n            ORDER BY (participation_rank + next_day_retention_rank + seven_day_retention_rank)\n        ) AS total_rank\n    FROM ranked_modes\n)\n\nSELECT \n    dtstatdate AS 统计日期,\n    matchsubmodegroupname AS 乐园各玩法名,\n    participation_rank AS 平均参与率排名,\n    next_day_retention_rank AS 次留排名,\n    seven_day_retention_rank AS 七留排名,\n    total_rank AS 总排名\nFROM final_ranks\nORDER BY dtstatdate, total_rank;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_matchlog_stat_di",
@@ -415,9 +415,9 @@
     },
     {
         "sql_id": "sql_58",
-        "question": "统计以下时间对应玩法id下的不同对局时长人数分布\n'20230717'-'20230723'  1310822585431254784    \n'20221116'-'20221122' 1282371711108385024    \n'20221123'-'20221129' 1287652322611036928    \n'20230301'-'20230307' 1294211358396518400    \n'20230607''20230613' 1297394991875754752     \n\n对局时长按照 [0-10min)，[10-30min)，[30min-1h)，[1h,2h)，[2h,3h)，[3h,4h)， [4h,5h)，\n[5h,6h)，[6h,7h)，[7h,8h)，[8h,9h)，[9h,10h)，[10h,∞)\t\t\n输出字段：玩法id、对局时长、人数  ",
-        "sql": "",
-        "复杂度": "复杂",
+        "question": "\n统计以下时间对应玩法id下的不同对局时长人数分布 \n'20240717'-'20240723' 1310822585431254784'20241116'-'20241122' 1282371711108385024'20241123'-'20241129' 1287652322611036928'20240301'-'20240307' 1294211358396518400'20240607''20240613' 1297394991875754752\n对局时长按照 [0-10min)，[10-30min)，[30min-1h)，[1h,2h)，[2h,3h)，[3h,4h)， [4h,5h)， [5h,6h)，[6h,7h)，[7h,8h)，[8h,9h)，[9h,10h)，[10h,∞) 输出字段：玩法id、对局时长、人数\n",
+        "sql": "WITH game_duration_mapping AS (\n    SELECT 1310822585431254784 AS imode, '20240717' AS start_date, '20240723' AS end_date\n    UNION ALL\n    SELECT 1282371711108385024 AS imode, '20241116' AS start_date, '20241122' AS end_date\n    UNION ALL\n    SELECT 1287652322611036928 AS imode, '20241123' AS start_date, '20241129' AS end_date\n    UNION ALL\n    SELECT 1294211358396518400 AS imode, '20240301' AS start_date, '20240307' AS end_date\n    UNION ALL\n    SELECT 1297394991875754752 AS imode, '20240607' AS start_date, '20240613' AS end_date\n),\nfiltered_data AS (\n    SELECT \n        a.imode,\n        a.itemp1 AS duration_seconds,\n        COUNT(DISTINCT a.vplayerid) AS player_count\n    FROM dws_jordass_matchlog_stat_di a\n    JOIN game_duration_mapping b\n      ON a.imode = b.imode\n     AND a.dtstatdate BETWEEN b.start_date AND b.end_date\n    WHERE a.platid = 255 -- 所有平台\n    GROUP BY a.imode, a.itemp1\n),\nduration_bins AS (\n    SELECT \n        imode,\n        duration_seconds,\n        player_count,\n        CASE \n            WHEN duration_seconds >= 0 AND duration_seconds < 600 THEN '[0-10min)'\n            WHEN duration_seconds >= 600 AND duration_seconds < 1800 THEN '[10-30min)'\n            WHEN duration_seconds >= 1800 AND duration_seconds < 3600 THEN '[30min-1h)'\n            WHEN duration_seconds >= 3600 AND duration_seconds < 7200 THEN '[1h,2h)'\n            WHEN duration_seconds >= 7200 AND duration_seconds < 10800 THEN '[2h,3h)'\n            WHEN duration_seconds >= 10800 AND duration_seconds < 14400 THEN '[3h,4h)'\n            WHEN duration_seconds >= 14400 AND duration_seconds < 18000 THEN '[4h,5h)'\n            WHEN duration_seconds >= 18000 AND duration_seconds < 21600 THEN '[5h,6h)'\n            WHEN duration_seconds >= 21600 AND duration_seconds < 25200 THEN '[6h,7h)'\n            WHEN duration_seconds >= 25200 AND duration_seconds < 28800 THEN '[7h,8h)'\n            WHEN duration_seconds >= 28800 AND duration_seconds < 32400 THEN '[8h,9h)'\n            WHEN duration_seconds >= 32400 AND duration_seconds < 36000 THEN '[9h,10h)'\n            WHEN duration_seconds >= 36000 THEN '[10h,∞)'\n            ELSE 'Unknown'\n        END AS duration_bin\n    FROM filtered_data\n)\nSELECT \n    imode AS 玩法id,\n    duration_bin AS 对局时长,\n    SUM(player_count) AS 人数\nFROM duration_bins\nGROUP BY imode, duration_bin\nORDER BY imode, \n         CASE duration_bin\n             WHEN '[0-10min)' THEN 1\n             WHEN '[10-30min)' THEN 2\n             WHEN '[30min-1h)' THEN 3\n             WHEN '[1h,2h)' THEN 4\n             WHEN '[2h,3h)' THEN 5\n             WHEN '[3h,4h)' THEN 6\n             WHEN '[4h,5h)' THEN 7\n             WHEN '[5h,6h)' THEN 8\n             WHEN '[6h,7h)' THEN 9\n             WHEN '[7h,8h)' THEN 10\n             WHEN '[8h,9h)' THEN 11\n             WHEN '[9h,10h)' THEN 12\n             WHEN '[10h,∞)' THEN 13\n             ELSE 14\n         END;",
+        "复杂度": "3复杂",
         "table_list": [
             "dws_jordass_matchlog_stat_di"
         ],
@@ -426,7 +426,7 @@
     {
         "sql_id": "sql_60",
         "question": "统计20250226往前180天联盟用户，联盟用户的30天滚动付费人数\n输出：统计日期（YYYYMMDD），联盟并付费的人数",
-        "sql": "",
+        "sql": "WITH alliance_users AS (\n    SELECT DISTINCT uid\n    FROM dwd_jordass_player_allianceactive_hi\n    WHERE tdbank_imp_date BETWEEN '20240829' AND '20250226'\n),\npaying_users AS (\n    SELECT vplayerid, dtstatdate\n    FROM dws_jordass_water_di\n    WHERE dtstatdate BETWEEN '20240829' AND '20250226'\n),\nrolling_payers AS (\n    SELECT \n        p.dtstatdate AS stat_date,\n        COUNT(DISTINCT p.vplayerid) AS paying_user_count\n    FROM paying_users p\n    JOIN dws_jordass_uid_login_df u ON p.vplayerid = u.vplayerid\n    JOIN alliance_users a ON u.uid = a.uid\n    WHERE p.dtstatdate BETWEEN '20240829' AND '20250226'\n      AND u.dtstatdate = '20250226' -- 取最新快照日确保用户存在\n    GROUP BY p.dtstatdate\n)\nSELECT \n    stat_date AS dtstatdate,\n    paying_user_count\nFROM rolling_payers\nORDER BY dtstatdate;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_water_di",
@@ -438,7 +438,7 @@
     {
         "sql_id": "sql_61",
         "question": "统计2024.2.9首日累充活动领奖玩家分R\n输出：用户类型（沉默付费、历史非付费、小R、中R、大R、超R），活跃人数、首日付费人数，首日付费ARPU，前一个月有消耗点券人数\n\n沉默付费：历史付过费且前1个月没有消耗过点券\n点券的分R：\n前一个月的点券消耗总金额，小于100代表小R，[100-500)代表中R，[500,1500)代表大R，大于等于1500 -  代表超R\n",
-        "sql": "",
+        "sql": "WITH first_day_payers AS (\n    SELECT \n        vplayerid,\n        SUM(imoney) AS first_day_pay_amount\n    FROM dws_jordass_water_di\n    WHERE dtstatdate = '20240209' AND platid = 255\n    GROUP BY vplayerid\n),\nticket_consumption_last_month AS (\n    SELECT \n        vplayerid,\n        SUM(CASE WHEN imoneytype = 1 AND addorreduce = 1 THEN imoney ELSE 0 END) AS ticket_consumed_last_month\n    FROM dwd_jordass_currencylog_hi\n    WHERE tdbank_imp_date >= '2024010900' AND tdbank_imp_date < '2024020900'\n    GROUP BY vplayerid\n),\nhistorical_payers AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_water_di\n    WHERE dtstatdate < '20240209'\n),\nplayer_classification AS (\n    SELECT \n        f.vplayerid,\n        f.first_day_pay_amount,\n        COALESCE(t.ticket_consumed_last_month, 0) AS ticket_consumed_last_month,\n        CASE \n            WHEN h.vplayerid IS NOT NULL AND COALESCE(t.ticket_consumed_last_month, 0) = 0 THEN '沉默付费'\n            WHEN h.vplayerid IS NULL THEN '历史非付费'\n            WHEN COALESCE(t.ticket_consumed_last_month, 0) < 100 THEN '小R'\n            WHEN COALESCE(t.ticket_consumed_last_month, 0) < 500 THEN '中R'\n            WHEN COALESCE(t.ticket_consumed_last_month, 0) < 1500 THEN '大R'\n            ELSE '超R'\n        END AS user_type\n    FROM first_day_payers f\n    LEFT JOIN ticket_consumption_last_month t ON f.vplayerid = t.vplayerid\n    LEFT JOIN historical_payers h ON f.vplayerid = h.vplayerid\n),\nlogin_status AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_login_di\n    WHERE dtstatdate = '20240209'\n)\nSELECT \n    pc.user_type,\n    COUNT(DISTINCT pc.vplayerid) AS active_count,\n    COUNT(DISTINCT pc.vplayerid) AS first_day_paid_count,\n    ROUND(SUM(pc.first_day_pay_amount) / NULLIF(COUNT(DISTINCT pc.vplayerid), 0), 2) AS first_day_arpu,\n    COUNT(DISTINCT CASE WHEN pc.ticket_consumed_last_month > 0 THEN pc.vplayerid END) AS ticket_consumers_last_month\nFROM player_classification pc\nJOIN login_status ls ON pc.vplayerid = ls.vplayerid\nGROUP BY pc.user_type\nORDER BY \n    CASE pc.user_type\n        WHEN '沉默付费' THEN 1\n        WHEN '历史非付费' THEN 2\n        WHEN '小R' THEN 3\n        WHEN '中R' THEN 4\n        WHEN '大R' THEN 5\n        WHEN '超R' THEN 6\n        ELSE 7\n    END;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_water_di",
@@ -451,7 +451,7 @@
     {
         "sql_id": "sql_62",
         "question": "统计20250226联盟前180日（包含当天）基础数据 说明：按照uid计算\n输出：统计日期（YYYYMMDD），角色DAU，联盟参与角色数，联盟完成特训任务角色数，联盟商店兑换次数",
-        "sql": "",
+        "sql": "WITH date_range AS (\n    SELECT DATE_FORMAT(DATE_SUB('2025-02-26', INTERVAL seq DAY), '%Y%m%d') AS statis_date\n    FROM (\n        SELECT 0 AS seq UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL\n        SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL\n        SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL\n        SELECT 15 UNION ALL SELECT 16 UNION ALL SELECT 17 UNION ALL SELECT 18 UNION ALL SELECT 19 UNION ALL\n        SELECT 20 UNION ALL SELECT 21 UNION ALL SELECT 22 UNION ALL SELECT 23 UNION ALL SELECT 24 UNION ALL\n        SELECT 25 UNION ALL SELECT 26 UNION ALL SELECT 27 UNION ALL SELECT 28 UNION ALL SELECT 29 UNION ALL\n        SELECT 30 UNION ALL SELECT 31 UNION ALL SELECT 32 UNION ALL SELECT 33 UNION ALL SELECT 34 UNION ALL\n        SELECT 35 UNION ALL SELECT 36 UNION ALL SELECT 37 UNION ALL SELECT 38 UNION ALL SELECT 39 UNION ALL\n        SELECT 40 UNION ALL SELECT 41 UNION ALL SELECT 42 UNION ALL SELECT 43 UNION ALL SELECT 44 UNION ALL\n        SELECT 45 UNION ALL SELECT 46 UNION ALL SELECT 47 UNION ALL SELECT 48 UNION ALL SELECT 49 UNION ALL\n        SELECT 50 UNION ALL SELECT 51 UNION ALL SELECT 52 UNION ALL SELECT 53 UNION ALL SELECT 54 UNION ALL\n        SELECT 55 UNION ALL SELECT 56 UNION ALL SELECT 57 UNION ALL SELECT 58 UNION ALL SELECT 59 UNION ALL\n        SELECT 60 UNION ALL SELECT 61 UNION ALL SELECT 62 UNION ALL SELECT 63 UNION ALL SELECT 64 UNION ALL\n        SELECT 65 UNION ALL SELECT 66 UNION ALL SELECT 67 UNION ALL SELECT 68 UNION ALL SELECT 69 UNION ALL\n        SELECT 70 UNION ALL SELECT 71 UNION ALL SELECT 72 UNION ALL SELECT 73 UNION ALL SELECT 74 UNION ALL\n        SELECT 75 UNION ALL SELECT 76 UNION ALL SELECT 77 UNION ALL SELECT 78 UNION ALL SELECT 79 UNION ALL\n        SELECT 80 UNION ALL SELECT 81 UNION ALL SELECT 82 UNION ALL SELECT 83 UNION ALL SELECT 84 UNION ALL\n        SELECT 85 UNION ALL SELECT 86 UNION ALL SELECT 87 UNION ALL SELECT 88 UNION ALL SELECT 89 UNION ALL\n        SELECT 90 UNION ALL SELECT 91 UNION ALL SELECT 92 UNION ALL SELECT 93 UNION ALL SELECT 94 UNION ALL\n        SELECT 95 UNION ALL SELECT 96 UNION ALL SELECT 97 UNION ALL SELECT 98 UNION ALL SELECT 99 UNION ALL\n        SELECT 100 UNION ALL SELECT 101 UNION ALL SELECT 102 UNION ALL SELECT 103 UNION ALL SELECT 104 UNION ALL\n        SELECT 105 UNION ALL SELECT 106 UNION ALL SELECT 107 UNION ALL SELECT 108 UNION ALL SELECT 109 UNION ALL\n        SELECT 110 UNION ALL SELECT 111 UNION ALL SELECT 112 UNION ALL SELECT 113 UNION ALL SELECT 114 UNION ALL\n        SELECT 115 UNION ALL SELECT 116 UNION ALL SELECT 117 UNION ALL SELECT 118 UNION ALL SELECT 119 UNION ALL\n        SELECT 120 UNION ALL SELECT 121 UNION ALL SELECT 122 UNION ALL SELECT 123 UNION ALL SELECT 124 UNION ALL\n        SELECT 125 UNION ALL SELECT 126 UNION ALL SELECT 127 UNION ALL SELECT 128 UNION ALL SELECT 129 UNION ALL\n        SELECT 130 UNION ALL SELECT 131 UNION ALL SELECT 132 UNION ALL SELECT 133 UNION ALL SELECT 134 UNION ALL\n        SELECT 135 UNION ALL SELECT 136 UNION ALL SELECT 137 UNION ALL SELECT 138 UNION ALL SELECT 139 UNION ALL\n        SELECT 140 UNION ALL SELECT 141 UNION ALL SELECT 142 UNION ALL SELECT 143 UNION ALL SELECT 144 UNION ALL\n        SELECT 145 UNION ALL SELECT 146 UNION ALL SELECT 147 UNION ALL SELECT 148 UNION ALL SELECT 149 UNION ALL\n        SELECT 150 UNION ALL SELECT 151 UNION ALL SELECT 152 UNION ALL SELECT 153 UNION ALL SELECT 154 UNION ALL\n        SELECT 155 UNION ALL SELECT 156 UNION ALL SELECT 157 UNION ALL SELECT 158 UNION ALL SELECT 159 UNION ALL\n        SELECT 160 UNION ALL SELECT 161 UNION ALL SELECT 162 UNION ALL SELECT 163 UNION ALL SELECT 164 UNION ALL\n        SELECT 165 UNION ALL SELECT 166 UNION ALL SELECT 167 UNION ALL SELECT 168 UNION ALL SELECT 169 UNION ALL\n        SELECT 170 UNION ALL SELECT 171 UNION ALL SELECT 172 UNION ALL SELECT 173 UNION ALL SELECT 174 UNION ALL\n        SELECT 175 UNION ALL SELECT 176 UNION ALL SELECT 177 UNION ALL SELECT 178 UNION ALL SELECT 179\n    ) t\n),\ndau_data AS (\n    SELECT \n        DATE_FORMAT(dteventtime, '%Y%m%d') AS statis_date,\n        uid\n    FROM dwd_jordass_playerlogin_hi\n    WHERE DATE_FORMAT(dteventtime, '%Y%m%d') IN (SELECT statis_date FROM date_range)\n    GROUP BY DATE_FORMAT(dteventtime, '%Y%m%d'), uid\n),\nalliance_active_data AS (\n    SELECT \n        DATE_FORMAT(dteventtime, '%Y%m%d') AS statis_date,\n        uid\n    FROM dwd_jordass_player_allianceactive_hi\n    WHERE DATE_FORMAT(dteventtime, '%Y%m%d') IN (SELECT statis_date FROM date_range)\n    GROUP BY DATE_FORMAT(dteventtime, '%Y%m%d'), uid\n),\nalliance_bootcamp_data AS (\n    SELECT \n        DATE_FORMAT(dteventtime, '%Y%m%d') AS statis_date,\n        memberuid AS uid\n    FROM dwd_jordass_alliancebootcamprecord_hi\n    WHERE DATE_FORMAT(dteventtime, '%Y%m%d') IN (SELECT statis_date FROM date_range)\n    GROUP BY DATE_FORMAT(dteventtime, '%Y%m%d'), memberuid\n),\nshop_buy_data AS (\n    SELECT \n        DATE_FORMAT(dteventtime, '%Y%m%d') AS statis_date,\n        COUNT(*) AS shop_exchange_count\n    FROM dwd_jordass_allianceshopbuy_hi\n    WHERE DATE_FORMAT(dteventtime, '%Y%m%d') IN (SELECT statis_date FROM date_range)\n    GROUP BY DATE_FORMAT(dteventtime, '%Y%m%d')\n)\nSELECT \n    dr.statis_date AS `统计日期`,\n    COALESCE(COUNT(DISTINCT dd.uid), 0) AS `角色DAU`,\n    COALESCE(COUNT(DISTINCT ad.uid), 0) AS `联盟参与角色数`,\n    COALESCE(COUNT(DISTINCT abd.uid), 0) AS `联盟完成特训任务角色数`,\n    COALESCE(sbd.shop_exchange_count, 0) AS `联盟商店兑换次数`\nFROM date_range dr\nLEFT JOIN dau_data dd ON dr.statis_date = dd.statis_date\nLEFT JOIN alliance_active_data ad ON dr.statis_date = ad.statis_date\nLEFT JOIN alliance_bootcamp_data abd ON dr.statis_date = abd.statis_date\nLEFT JOIN shop_buy_data sbd ON dr.statis_date = sbd.statis_date\nGROUP BY dr.statis_date, sbd.shop_exchange_count\nORDER BY dr.statis_date;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_allianceshopbuy_hi",
@@ -465,7 +465,7 @@
     {
         "sql_id": "sql_64",
         "question": "统计：2024.10.22-2024.11.19、2024.11.22-2024.12.19、2024.10.22-10.27、2024.10.28-11.03、2024.11.04-11.10、2024.11.11-11.17、2024.11.18-11.19、2024.11.22-11.24、2024.11.25-12.01、2024.12.02-12.08、2024.12.09-12.15、2024.12.16-12.19几个时间段的最近上新的曝光用户数（UV）、曝光次数（PV）\n输出：统计日期（例:20241023）、UV、PV\n",
-        "sql": "",
+        "sql": "SELECT \n    dtstatdate AS 统计日期,\n    COUNT(DISTINCT vplayerid) AS UV,\n    COUNT(*) AS PV\nFROM dws_jordass_buttonpress_pre_di\nWHERE dtstatdate BETWEEN '20241022' AND '20241119'\n   OR dtstatdate BETWEEN '20241122' AND '20241219'\n   OR dtstatdate BETWEEN '20241022' AND '20241027'\n   OR dtstatdate BETWEEN '20241028' AND '20241103'\n   OR dtstatdate BETWEEN '20241104' AND '20241110'\n   OR dtstatdate BETWEEN '20241111' AND '20241117'\n   OR dtstatdate BETWEEN '20241118' AND '20241119'\n   OR dtstatdate BETWEEN '20241122' AND '20241124'\n   OR dtstatdate BETWEEN '20241125' AND '20241201'\n   OR dtstatdate BETWEEN '20241202' AND '20241208'\n   OR dtstatdate BETWEEN '20241209' AND '20241215'\n   OR dtstatdate BETWEEN '20241216' AND '20241219'\nGROUP BY dtstatdate\nORDER BY dtstatdate;",
         "复杂度": "简单",
         "table_list": [
             "dws_jordass_buttonpress_pre_di"
@@ -475,7 +475,7 @@
     {
         "sql_id": "sql_65",
         "question": "查询2024.11.29-2024.12.19期间的任务领取数据，并按类型汇总（跨日期）\n输出 ：日期（YYYYMMDD、汇总），类型，人数，次数",
-        "sql": "",
+        "sql": "SELECT \n    DATE_FORMAT(dteventtime, '%Y%m%d') AS dtstatdate,\n    cond1 AS task_type,\n    COUNT(DISTINCT vplayerid) AS user_count,\n    COUNT(*) AS receive_count\nFROM dwd_jordass_activity_rewardrecord_hi\nWHERE dteventtime >= '2024-11-29 00:00:00' AND dteventtime <= '2024-12-19 23:59:59'\nGROUP BY DATE_FORMAT(dteventtime, '%Y%m%d'), cond1\nORDER BY dtstatdate, task_type;",
         "复杂度": "简单",
         "table_list": [
             "dwd_jordass_activity_rewardrecord_hi"
@@ -485,7 +485,7 @@
     {
         "sql_id": "sql_67",
         "question": "统计2025.1.24-2025.2.6时间区间内，道具为430487,430485,602004025,602002011 的产出次数\t\n输出：道具id，产出次数",
-        "sql": "",
+        "sql": "SELECT \n    igoodsid AS 道具id,\n    COUNT(*) AS 产出次数\nFROM \n    dwd_jordass_gearlog_hi\nWHERE \n    dteventtime >= '2025-01-24 00:00:00' \n    AND dteventtime <= '2025-02-06 23:59:59'\n    AND igoodsid IN (430487, 430485, 602004025, 602002011)\n    AND addorreduce = 0  -- 增加动作为产出\nGROUP BY \n    igoodsid;",
         "复杂度": "简单",
         "table_list": [
             "dwd_jordass_gearlog_hi"
@@ -495,7 +495,7 @@
     {
         "sql_id": "sql_68",
         "question": "统计时间范围：25.1.28-25.2.10，新春华服id：848，841 \n输出：日期（YYDDMM），人数",
-        "sql": "",
+        "sql": "SELECT \n    DATE_FORMAT(dteventtime, '%y%m%d') AS date_yymmdd,\n    COUNT(DISTINCT vplayerid) AS player_count\nFROM dwd_jordass_lotteryrecord_hi\nLATERAL VIEW explode(split(awardsitems, ':')) tmp AS item_str\nWHERE tdbank_imp_date BETWEEN '2025012800' AND '2025021023'\n  AND split(item_str, '-')[0] IN ('848', '841')\nGROUP BY DATE_FORMAT(dteventtime, '%y%m%d')\nORDER BY date_yymmdd;",
         "复杂度": "简单",
         "table_list": [
             "dwd_jordass_lotteryrecord_hi"
@@ -505,7 +505,7 @@
     {
         "sql_id": "sql_69",
         "question": "统计2024.12.25——2025.1.5 ，不同信息类型的玩家数量\n\n信息类型:chattype in (20,25,26,16,27,8)\n\n输出 日期（20241225-20250105），信息类型，人数，次数",
-        "sql": "",
+        "sql": "SELECT \n    REPLACE(SUBSTR(dteventtime, 1, 10), '-', '') AS 日期,\n    chattype AS 信息类型,\n    COUNT(DISTINCT playerid) AS 人数,\n    COUNT(*) AS 次数\nFROM dwd_jordass_msgchatrecord_hi\nWHERE tdbank_imp_date >= '20241225' AND tdbank_imp_date <= '20250105'\n  AND chattype IN (20, 25, 26, 16, 27, 8)\nGROUP BY 日期, chattype\nORDER BY 日期, chattype;",
         "复杂度": "简单",
         "table_list": [
             "dwd_jordass_msgchatrecord_hi"
@@ -515,7 +515,7 @@
     {
         "sql_id": "sql_70",
         "question": "统计2024.11.29-2024.12.19期间，不同抽奖档位的对应人数\n输出 抽奖档位（含汇总档位），人数",
-        "sql": "",
+        "sql": "SELECT \n    awardidx AS 抽奖档位,\n    COUNT(DISTINCT vplayerid) AS 人数\nFROM \n    dwd_jordass_activity_rewardrecord_hi\nWHERE \n    acttype IN (20, 25, 26, 16, 27, 8)\n    AND dteventtime >= '2024-11-29 00:00:00'\n    AND dteventtime <= '2024-12-19 23:59:59'\n    AND tdbank_imp_date BETWEEN '2024112900' AND '2024121923'\nGROUP BY \n    ROLLUP(awardidx)\nORDER BY \n    awardidx IS NULL,\n    awardidx ASC;",
         "复杂度": "简单",
         "table_list": [
             "dwd_jordass_activity_rewardrecord_hi"
@@ -525,7 +525,7 @@
     {
         "sql_id": "sql_71",
         "question": "统计2024.11.29-2024.12.19期间，每七天统计一次阶梯活动相关用户数\n输出 日期范围（20241129-20241205、20241206-20241212、20241213-20241219），extarg1类型，用户数，次数",
-        "sql": "",
+        "sql": "SELECT \n    CASE \n        WHEN SUBSTRING(tdbank_imp_date, 1, 8) >= '20241129' AND SUBSTRING(tdbank_imp_date, 1, 8) <= '20241205' THEN '20241129-20241205'\n        WHEN SUBSTRING(tdbank_imp_date, 1, 8) >= '20241206' AND SUBSTRING(tdbank_imp_date, 1, 8) <= '20241212' THEN '20241206-20241212'\n        WHEN SUBSTRING(tdbank_imp_date, 1, 8) >= '20241213' AND SUBSTRING(tdbank_imp_date, 1, 8) <= '20241219' THEN '20241213-20241219'\n    END AS date_range,\n    extarg1 AS extarg1_type,\n    COUNT(DISTINCT vplayerid) AS user_count,\n    COUNT(*) AS event_count\nFROM dwd_jordass_activitypress_hi\nWHERE SUBSTRING(tdbank_imp_date, 1, 8) BETWEEN '20241129' AND '20241219'\n  AND ireason = 2411291018\nGROUP BY \n    CASE \n        WHEN SUBSTRING(tdbank_imp_date, 1, 8) >= '20241129' AND SUBSTRING(tdbank_imp_date, 1, 8) <= '20241205' THEN '20241129-20241205'\n        WHEN SUBSTRING(tdbank_imp_date, 1, 8) >= '20241206' AND SUBSTRING(tdbank_imp_date, 1, 8) <= '20241212' THEN '20241206-20241212'\n        WHEN SUBSTRING(tdbank_imp_date, 1, 8) >= '20241213' AND SUBSTRING(tdbank_imp_date, 1, 8) <= '20241219' THEN '20241213-20241219'\n    END,\n    extarg1\nORDER BY date_range, extarg1_type;",
         "复杂度": "简单",
         "table_list": [
             "dwd_jordass_activitypress_hi"
@@ -535,7 +535,7 @@
     {
         "sql_id": "sql_73",
         "question": "统计20241123-20241222对决冠军，乐园其他，和乐园汇总 三类用户的组队和对局情况\n输出：乐园总参与人数，乐园总参与局数，乐园组队人数，乐园组队局数，对决冠军总参与人数，对决冠军总参与局数，对决冠军组队人数，对决冠军组队局数，乐园其他总参与人数，乐园其他总参与局数，乐园其他组队人数，乐园其他组队局数",
-        "sql": "",
+        "sql": "SELECT \n    -- 乐园总参与人数、局数、组队人数、组队局数\n    COUNT(DISTINCT CASE WHEN matchmode IN (101, 109, 110) THEN vplayerid END) AS total_players_all,\n    COUNT(CASE WHEN matchmode IN (101, 109, 110) THEN 1 END) AS total_matches_all,\n    COUNT(DISTINCT CASE WHEN matchmode IN (101, 109, 110) AND isleader = 1 AND teamnum > 1 THEN vplayerid END) AS team_players_all,\n    COUNT(CASE WHEN matchmode IN (101, 109, 110) AND isleader = 1 AND teamnum > 1 THEN 1 END) AS team_matches_all,\n\n    -- 对决冠军（假设为 matchmode=101）\n    COUNT(DISTINCT CASE WHEN matchmode = 101 THEN vplayerid END) AS total_players_champion,\n    COUNT(CASE WHEN matchmode = 101 THEN 1 END) AS total_matches_champion,\n    COUNT(DISTINCT CASE WHEN matchmode = 101 AND isleader = 1 AND teamnum > 1 THEN vplayerid END) AS team_players_champion,\n    COUNT(CASE WHEN matchmode = 101 AND isleader = 1 AND teamnum > 1 THEN 1 END) AS team_matches_champion,\n\n    -- 乐园其他（matchmode=109 or 110）\n    COUNT(DISTINCT CASE WHEN matchmode IN (109, 110) THEN vplayerid END) AS total_players_other,\n    COUNT(CASE WHEN matchmode IN (109, 110) THEN 1 END) AS total_matches_other,\n    COUNT(DISTINCT CASE WHEN matchmode IN (109, 110) AND isleader = 1 AND teamnum > 1 THEN vplayerid END) AS team_players_other,\n    COUNT(CASE WHEN matchmode IN (109, 110) AND isleader = 1 AND teamnum > 1 THEN 1 END) AS team_matches_other\n\nFROM dwd_jordass_player_matchrecord_hi\nWHERE tdbank_imp_date BETWEEN '2024112300' AND '2024122223'\n  AND matchmode IN (101, 109, 110);",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_player_matchrecord_hi"
@@ -545,7 +545,7 @@
     {
         "sql_id": "sql_74",
         "question": "统计 SS30赛季手册和SS29赛季手册的按钮人数\nSS30赛季:2024112305 - 2024112616\nSS29赛季:2024092405 - 2024092716\n输出：按钮类型，SS30赛季手册人数，SS29赛季手册人数",
-        "sql": "",
+        "sql": "WITH ss30_buttons AS (\n    SELECT\n        buttontypes,\n        COUNT(DISTINCT vplayerid) AS ss30_player_count\n    FROM\n        dwd_jordass_pressbutton_hi\n    WHERE\n        dteventtime >= '2024-11-30 05:00:00'\n        AND dteventtime <= '2024-11-26 16:59:59'\n    GROUP BY\n        buttontypes\n),\nss29_buttons AS (\n    SELECT\n        buttontypes,\n        COUNT(DISTINCT vplayerid) AS ss29_player_count\n    FROM\n        dwd_jordass_pressbutton_hi\n    WHERE\n        dteventtime >= '2024-09-24 05:00:00'\n        AND dteventtime <= '2024-09-27 16:59:59'\n    GROUP BY\n        buttontypes\n)\nSELECT\n    COALESCE(ss30.buttontypes, ss29.buttontypes) AS buttontypes,\n    COALESCE(ss30.ss30_player_count, 0) AS ss30_player_count,\n    COALESCE(ss29.ss29_player_count, 0) AS ss29_player_count\nFROM\n    ss30_buttons ss30\nFULL OUTER JOIN\n    ss29_buttons ss29\nON\n    ss30.buttontypes = ss29.buttontypes\nORDER BY\n    buttontypes;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_pressbutton_hi"
@@ -555,7 +555,7 @@
     {
         "sql_id": "sql_75",
         "question": "统计：2022080400-2024112400的研究所解锁语音数量\n输出：baseid,解锁语音数量",
-        "sql": "",
+        "sql": "SELECT baseid, COUNT(effectid) AS 解锁语音数量 FROM dwd_jordass_voicethemelog_hi WHERE dteventtime >= '2022-08-04 00:00:00' AND dteventtime <= '2024-11-24 00:00:00' GROUP BY baseid;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_voicethemelog_hi"
@@ -565,7 +565,7 @@
     {
         "sql_id": "sql_77",
         "question": "统计：20230123开始7日内元素付费金额\n输出：日期（20230123-20230129），人数，元素付费金额",
-        "sql": "",
+        "sql": "SELECT\n  tdbank_imp_date AS 日期,\n  COUNT(DISTINCT vplayerid) AS 人数,\n  SUM(imoney) AS 元素付费金额\nFROM\n  dwd_jordass_currencylog_hi\nWHERE\n  tdbank_imp_date BETWEEN '20230123' AND '20230129'\n  AND imoneytype IN (0, 1, 2, 4, 6, 1026, 1027)\n  AND addorreduce = 0\nGROUP BY\n  tdbank_imp_date\nORDER BY\n  日期;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_currencylog_hi"
@@ -575,7 +575,7 @@
     {
         "sql_id": "sql_78",
         "question": "统计：首日红装活动（20250119）返场抽奖的用户属性\n输出：初日华服回归抽奖&沙漠统治者有抽奖人数\n初日华服回归抽奖&境界双花有抽奖人数\t\t\n初日华服回归抽奖&玄龙凌霄有抽奖人数\t\t\n初日华服回归抽奖&沙漠统治者有抽奖&但没有其主套人数\t\t\n初日华服回归抽奖&境界双花有抽奖&但没有其主套人数\t\t\n初日华服回归抽奖&玄龙凌霄有抽奖&但没有其主套人数\t\t\n初日华服回归抽奖&【沙漠统治者和境界双花有主套】人数\t\t\n初日华服回归抽奖&【沙漠统治者和玄龙凌霄有主套】人数\t\t\t\t\n初日华服回归抽奖&【境界双花和玄龙凌霄有主套】人数\t\t\t\t\n初日华服回归抽奖但【沙漠统治者&境界双花&玄龙凌霄】没有抽奖人数",
-        "sql": "",
+        "sql": "WITH lottery_users AS (\n    SELECT DISTINCT vplayerid\n    FROM dwd_jordass_lotteryrecord_hi\n    WHERE activitytype = 20250119\n),\ngear_info AS (\n    SELECT vplayerid, igoodsid\n    FROM dwd_jordass_gearlog_hi\n    WHERE reason IN (189, 190)\n      AND imoneytype = 1027\n),\ntarget_sets AS (\n    SELECT \n        lu.vplayerid,\n        MAX(CASE WHEN gi.igoodsid = 1602517 THEN 1 ELSE 0 END) AS desert_ruler_drawn,\n        MAX(CASE WHEN gi.igoodsid = 1602518 THEN 1 ELSE 0 END) AS realm_bloom_drawn,\n        MAX(CASE WHEN gi.igoodsid = 1602519 THEN 1 ELSE 0 END) AS dragon_sky_drawn,\n        MAX(CASE WHEN gi.igoodsid = 1602520 THEN 1 ELSE 0 END) AS desert_ruler_owned,\n        MAX(CASE WHEN gi.igoodsid = 1602521 THEN 1 ELSE 0 END) AS realm_bloom_owned,\n        MAX(CASE WHEN gi.igoodsid = 1602522 THEN 1 ELSE 0 END) AS dragon_sky_owned\n    FROM lottery_users lu\n    LEFT JOIN gear_info gi ON lu.vplayerid = gi.vplayerid\n    GROUP BY lu.vplayerid\n)\nSELECT\n    SUM(CASE WHEN desert_ruler_drawn = 1 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&沙漠统治者有抽奖人数\",\n    SUM(CASE WHEN realm_bloom_drawn = 1 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&境界双花有抽奖人数\",\n    SUM(CASE WHEN dragon_sky_drawn = 1 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&玄龙凌霄有抽奖人数\",\n    SUM(CASE WHEN desert_ruler_drawn = 1 AND desert_ruler_owned = 0 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&沙漠统治者有抽奖&但没有其主套人数\",\n    SUM(CASE WHEN realm_bloom_drawn = 1 AND realm_bloom_owned = 0 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&境界双花有抽奖&但没有其主套人数\",\n    SUM(CASE WHEN dragon_sky_drawn = 1 AND dragon_sky_owned = 0 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&玄龙凌霄有抽奖&但没有其主套人数\",\n    SUM(CASE WHEN desert_ruler_drawn = 1 AND realm_bloom_drawn = 1 AND desert_ruler_owned = 1 AND realm_bloom_owned = 1 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&【沙漠统治者和境界双花有主套】人数\",\n    SUM(CASE WHEN desert_ruler_drawn = 1 AND dragon_sky_drawn = 1 AND desert_ruler_owned = 1 AND dragon_sky_owned = 1 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&【沙漠统治者和玄龙凌霄有主套】人数\",\n    SUM(CASE WHEN realm_bloom_drawn = 1 AND dragon_sky_drawn = 1 AND realm_bloom_owned = 1 AND dragon_sky_owned = 1 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖&【境界双花和玄龙凌霄有主套】人数\",\n    SUM(CASE WHEN desert_ruler_drawn = 0 AND realm_bloom_drawn = 0 AND dragon_sky_drawn = 0 THEN 1 ELSE 0 END) AS \"初日华服回归抽奖但【沙漠统治者&境界双花&玄龙凌霄】没有抽奖人数\"\nFROM target_sets;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_jordass_gearlog_hi",
@@ -586,7 +586,7 @@
     {
         "sql_id": "sql_80",
         "question": "统计：2024.10.2-2025.1.8内，每七天为一个周期，上周没参与对决冠军玩法但下周参与了对决冠军玩法的用户，上下周的主玩玩法、参与玩法以及对决冠军玩法游玩时长\n输出：时间区间（2024-10-09-2025-01-08），上周主玩玩法游玩时长，上周参与玩法游玩时长，本周主玩玩法游玩时长，本周参与玩法游玩时长，本周对决冠军玩法游玩时长",
-        "sql": "",
+        "sql": "WITH RECURSIVE weeks AS (\n    SELECT \n        DATE_SUB(CAST('2024-10-02' AS DATE), INTERVAL (DAYOFWEEK(CAST('2024-10-02' AS DATE)) - 1) DAY) AS week_start,\n        DATE_ADD(DATE_SUB(CAST('2024-10-02' AS DATE), INTERVAL (DAYOFWEEK(CAST('2024-10-02' AS DATE)) - 1) DAY), INTERVAL 6 DAY) AS week_end\n    UNION ALL\n    SELECT \n        DATE_ADD(week_start, INTERVAL 7 DAY),\n        DATE_ADD(week_end, INTERVAL 7 DAY)\n    FROM weeks\n    WHERE week_start < DATE_SUB(CAST('2025-01-08' AS DATE), INTERVAL 6 DAY)\n),\nweekly_mode_stats AS (\n    SELECT\n        w.week_start,\n        w.week_end,\n        a.vplayerid,\n        a.modename,\n        SUM(a.roundtime) AS mode_playtime\n    FROM weeks w\n    JOIN dws_jordass_mode_roundrecord_di a\n      ON CAST(a.dtstatdate AS DATE) BETWEEN w.week_start AND w.week_end\n    WHERE a.dtstatdate BETWEEN '20241002' AND '20250108'\n    GROUP BY w.week_start, w.week_end, a.vplayerid, a.modename\n),\nweekly_main_mode AS (\n    SELECT\n        week_start,\n        week_end,\n        vplayerid,\n        modename AS main_modename,\n        mode_playtime AS main_mode_playtime\n    FROM (\n        SELECT\n            *,\n            ROW_NUMBER() OVER (PARTITION BY week_start, week_end, vplayerid ORDER BY mode_playtime DESC) AS rn\n        FROM weekly_mode_stats\n    ) t\n    WHERE rn = 1\n),\nweekly_champion AS (\n    SELECT\n        week_start,\n        week_end,\n        vplayerid,\n        SUM(mode_playtime) AS champion_playtime\n    FROM weekly_mode_stats\n    WHERE modename = '对决冠军'\n    GROUP BY week_start, week_end, vplayerid\n),\nweekly_total AS (\n    SELECT\n        week_start,\n        week_end,\n        vplayerid,\n        SUM(mode_playtime) AS total_playtime\n    FROM weekly_mode_stats\n    WHERE modename != '对决冠军'\n    GROUP BY week_start, week_end, vplayerid\n),\nweekly_combined AS (\n    SELECT\n        wmm.week_start,\n        wmm.week_end,\n        wmm.vplayerid,\n        wmm.main_modename,\n        wmm.main_mode_playtime,\n        wt.total_playtime AS participate_playtime,\n        COALESCE(wc.champion_playtime, 0) AS champion_playtime\n    FROM weekly_main_mode wmm\n    JOIN weekly_total wt\n      ON wmm.week_start = wt.week_start \n     AND wmm.week_end = wt.week_end \n     AND wmm.vplayerid = wt.vplayerid\n    LEFT JOIN weekly_champion wc\n      ON wmm.week_start = wc.week_start \n     AND wmm.week_end = wc.week_end \n     AND wmm.vplayerid = wc.vplayerid\n),\nchampion_conversion AS (\n    SELECT\n        week_start,\n        week_end,\n        vplayerid,\n        main_modename,\n        main_mode_playtime,\n        participate_playtime,\n        champion_playtime,\n        LAG(champion_playtime, 1, 0) OVER (PARTITION BY vplayerid ORDER BY week_start) AS prev_champion_playtime,\n        LAG(main_mode_playtime, 1) OVER (PARTITION BY vplayerid ORDER BY week_start) AS prev_main_mode_playtime,\n        LAG(participate_playtime, 1) OVER (PARTITION BY vplayerid ORDER BY week_start) AS prev_participate_playtime\n    FROM weekly_combined\n)\nSELECT\n    CONCAT(CAST(week_start AS STRING), '-', CAST(week_end AS STRING)) AS time_range,\n    prev_main_mode_playtime AS last_week_main_mode_playtime,\n    prev_participate_playtime AS last_week_participate_playtime,\n    main_mode_playtime AS this_week_main_mode_playtime,\n    participate_playtime AS this_week_participate_playtime,\n    champion_playtime AS this_week_champion_playtime\nFROM champion_conversion\nWHERE champion_playtime > 0 \n  AND prev_champion_playtime = 0\nORDER BY week_start, vplayerid;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_mode_roundrecord_di"
@@ -596,7 +596,7 @@
     {
         "sql_id": "sql_82",
         "question": "统计20220408-20220410第三人称四排用户中 玩法类型（群屿 山峦 假日群岛）赛季等级总积分的人数\n输出：玩法类型，赛季等级，总积分范围（[1,2) 、[2,3).. 左闭右开），人数",
-        "sql": "",
+        "sql": "SELECT \n    CASE map\n        WHEN 1001 THEN '群屿'\n        WHEN 1002 THEN '山峦'\n        WHEN 1003 THEN '假日群岛'\n    END AS 玩法类型,\n    newsegmentlevel AS 赛季等级,\n    CONCAT('[', FLOOR(totalpoint), ',', FLOOR(totalpoint) + 1, ')') AS 总积分范围,\n    COUNT(DISTINCT vplayerid) AS 人数\nFROM dwd_jordass_roundflow_hi\nWHERE SUBSTRING(tdbank_imp_date, 1, 8) BETWEEN '20220408' AND '20220410'\n  AND mode = 103\n  AND map IN (1001, 1002, 1003)\nGROUP BY \n    CASE map\n        WHEN 1001 THEN '群屿'\n        WHEN 1002 THEN '山峦'\n        WHEN 1003 THEN '假日群岛'\n    END,\n    newsegmentlevel,\n    FLOOR(totalpoint)\nORDER BY \n    玩法类型,\n    赛季等级,\n    FLOOR(totalpoint);",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_roundflow_hi"
@@ -606,7 +606,7 @@
     {
         "sql_id": "sql_83",
         "question": "统计流失14天以上的回流用户的点击量子鸟赠礼、回到大厅和参与乐园对局的数据\n统计日期\n2024/1/2\n2023/12/19\n2023/12/12\n2023/12/5\n2023/10/10\n2023/9/19\n2023/1/3\n2022/12/20\n输出：统计日（YYYYMMDD）、用户类型（'流失14天以上的回流用户'）、当天回流用户数、点击量子鸟赠礼用户数、回到大厅用户数、当天有参与乐园对局的用户数",
-        "sql": "",
+        "sql": "WITH stat_dates AS (\n    SELECT '20240102' as dtstatdate UNION ALL\n    SELECT '20231219' UNION ALL\n    SELECT '20231212' UNION ALL\n    SELECT '20231205' UNION ALL\n    SELECT '20231010' UNION ALL\n    SELECT '20230919' UNION ALL\n    SELECT '20230103' UNION ALL\n    SELECT '20221220'\n),\n流失回流用户 AS (\n    SELECT DISTINCT\n        l.dtstatdate,\n        l.vplayerid\n    FROM dws_jordass_login_df l\n    JOIN stat_dates s ON l.dtstatdate = s.dtstatdate\n    WHERE l.platid = 255\n      AND LENGTH(l.cbitmap) >= 15\n      AND SUBSTR(l.cbitmap, 1, 1) = '1'\n      AND SUBSTR(l.cbitmap, 2, 14) = '00000000000000'\n),\n点击行为统计 AS (\n    SELECT \n        b.dtstatdate,\n        b.vplayerid,\n        COUNT(CASE WHEN b.buttontype = '量子鸟赠礼' THEN 1 END) AS quantum_gift_clicks,\n        COUNT(CASE WHEN b.buttontype = '回到大厅' THEN 1 END) AS return_hall_clicks\n    FROM dws_jordass_buttonpress_pre_di b\n    JOIN 流失回流用户 r ON b.dtstatdate = r.dtstatdate AND b.vplayerid = r.vplayerid\n    GROUP BY b.dtstatdate, b.vplayerid\n),\n乐园对局统计 AS (\n    SELECT \n        m.dtstatdate,\n        m.vplayerid\n    FROM dws_jordass_matchlog_stat_di m\n    JOIN 流失回流用户 r ON m.dtstatdate = r.dtstatdate AND m.vplayerid = r.vplayerid\n    WHERE m.imode = 255\n)\n\nSELECT \n    r.dtstatdate AS 统计日,\n    '流失14天以上的回流用户' AS 用户类型,\n    COUNT(DISTINCT r.vplayerid) AS 当天回流用户数,\n    COUNT(DISTINCT CASE WHEN c.quantum_gift_clicks > 0 THEN r.vplayerid END) AS 点击量子鸟赠礼用户数,\n    COUNT(DISTINCT CASE WHEN c.return_hall_clicks > 0 THEN r.vplayerid END) AS 回到大厅用户数,\n    COUNT(DISTINCT p.vplayerid) AS 当天有参与乐园对局的用户数\nFROM 流失回流用户 r\nLEFT JOIN 点击行为统计 c ON r.dtstatdate = c.dtstatdate AND r.vplayerid = c.vplayerid\nLEFT JOIN 乐园对局统计 p ON r.dtstatdate = p.dtstatdate AND r.vplayerid = p.vplayerid\nGROUP BY r.dtstatdate\nORDER BY r.dtstatdate;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_matchlog_stat_di",
@@ -618,7 +618,7 @@
     {
         "sql_id": "sql_84",
         "question": "统计2018年注册且近30天有活跃用户，并且在2020年9月到22年4月期间添加过好友的用户，每个月人均在线好友数\n输出：自然月（YYYYMM），人均在线好友数",
-        "sql": "",
+        "sql": "WITH reg_users AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_login_df\n    WHERE dregdate >= '20180101' AND dregdate <= '20181231'\n      AND dtstatdate BETWEEN '20220401' AND '20220430'\n),\nactive_users AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_login_df\n    WHERE dtstatdate BETWEEN '20220401' AND '20220430'\n      AND SUBSTRING(cbitmap, 1, 30) LIKE '%1%'\n),\nfriend_added_users AS (\n    SELECT DISTINCT fl.vplayerid\n    FROM dwd_jordass_friendlist_hi fl\n    JOIN reg_users ru ON fl.vplayerid = ru.vplayerid\n    WHERE fl.dteventtime >= '2020-09-01 00:00:00'\n      AND fl.dteventtime <= '2022-04-30 23:59:59'\n),\nqualified_users AS (\n    SELECT au.vplayerid\n    FROM active_users au\n    INNER JOIN friend_added_users fau ON au.vplayerid = fau.vplayerid\n),\nmonthly_avg_friends AS (\n    SELECT \n        DATE_FORMAT(STR_TO_DATE(dtstatdate, '%Y%m%d'), '%Y%m') AS month,\n        AVG(friendcount) AS avg_online_friends\n    FROM dws_jordass_login_df\n    WHERE vplayerid IN (SELECT vplayerid FROM qualified_users)\n      AND dtstatdate BETWEEN '20220401' AND '20220430'\n    GROUP BY DATE_FORMAT(STR_TO_DATE(dtstatdate, '%Y%m%d'), '%Y%m')\n)\nSELECT \n    month AS statis_month,\n    CAST(avg_online_friends AS DECIMAL(10,2)) AS avg_online_friends_per_user\nFROM monthly_avg_friends\nORDER BY month;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_df",
@@ -630,7 +630,7 @@
     {
         "sql_id": "sql_85",
         "question": "统计 20220506-20220508，20220513-20220515 两个区间的活跃用户进入匹配对局以及是否进入微赛事的情况\n输出：统计日期（YYYYMMDD），活跃人数，匹配人数，参加微赛事人数，未参加微赛事人数",
-        "sql": "",
+        "sql": "WITH active_users AS (\n    SELECT DISTINCT dtstatdate, vplayerid\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20220506' AND '20220508'\n       OR dtstatdate BETWEEN '20220513' AND '20220515'\n),\nmatched_users AS (\n    SELECT DISTINCT DATE(dteventtime) AS statis_date, vplayerid\n    FROM dwd_jordass_player_matchrecord_hi\n    WHERE dteventtime >= '2022-05-06' AND dteventtime < '2022-05-09'\n       OR dteventtime >= '2022-05-13' AND dteventtime < '2022-05-16'\n),\nmicro_tournament_users AS (\n    SELECT DISTINCT DATE(dteventtime) AS statis_date, vplayerid\n    FROM dwd_jordass_player_matchrecord_hi\n    WHERE (dteventtime >= '2022-05-06' AND dteventtime < '2022-05-09'\n        OR dteventtime >= '2022-05-13' AND dteventtime < '2022-05-16')\n      AND tournamentid > 0\n)\nSELECT \n    au.dtstatdate AS 统计日期,\n    COUNT(DISTINCT au.vplayerid) AS 活跃人数,\n    COUNT(DISTINCT mu.vplayerid) AS 匹配人数,\n    COUNT(DISTINCT mtu.vplayerid) AS 参加微赛事人数,\n    COUNT(DISTINCT mu.vplayerid) - COUNT(DISTINCT mtu.vplayerid) AS 未参加微赛事人数\nFROM active_users au\nLEFT JOIN matched_users mu ON au.dtstatdate = REPLACE(CAST(mu.statis_date AS STRING), '-', '')\nLEFT JOIN micro_tournament_users mtu ON au.dtstatdate = REPLACE(CAST(mtu.statis_date AS STRING), '-', '')\nGROUP BY au.dtstatdate\nORDER BY au.dtstatdate;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_di",
@@ -642,7 +642,7 @@
     {
         "sql_id": "sql_87",
         "question": "统计2023.07.02和2023.07.09 参与乐园各子玩法的用户里，砺刃新进、回流、留存用户数\n注：新进，回流，留存都按照7天为一个周期来计算\n输出：统计日期（YYYYMMDD），玩法，类型（新进、回流、留存），人数",
-        "sql": "",
+        "sql": "WITH play_dates AS (\n    SELECT '20230702' AS statis_date\n    UNION ALL\n    SELECT '20230709'\n),\nplayers_with_mode AS (\n    SELECT\n        pd.statis_date,\n        djlp.matchsubmodegroup AS submode,\n        djlp.vplayerid,\n        djlp.cbitmap,\n        djlp.dregdate AS mode_dregdate,\n        djll.dregdate AS global_dregdate,\n        djll.cbitmap AS login_bitmap\n    FROM play_dates pd\n    JOIN dim_jordass_leyuan_participate_cdf_nf djlp\n      ON djlp.dtstatdate = pd.statis_date\n    JOIN dws_jordass_login_df djll\n      ON djll.vplayerid = djlp.vplayerid\n     AND djll.dtstatdate = pd.statis_date\n     AND djll.platid = 255\n),\nnew_players AS (\n    SELECT\n        statis_date,\n        submode,\n        COUNT(DISTINCT vplayerid) AS new_count\n    FROM players_with_mode\n    WHERE statis_date = REPLACE(mode_dregdate, '-', '')\n    GROUP BY statis_date, submode\n),\nretention_players AS (\n    SELECT\n        pw1.statis_date,\n        pw1.submode,\n        COUNT(DISTINCT pw1.vplayerid) AS retained_count\n    FROM players_with_mode pw1\n    WHERE SUBSTR(pw1.login_bitmap, 1, 1) = '1'\n      AND SUBSTR(pw1.login_bitmap, 8, 1) = '1'\n    GROUP BY pw1.statis_date, pw1.submode\n),\nreturn_players AS (\n    SELECT\n        pw2.statis_date,\n        pw2.submode,\n        COUNT(DISTINCT pw2.vplayerid) AS returned_count\n    FROM players_with_mode pw2\n    WHERE SUBSTR(pw2.login_bitmap, 1, 1) = '1'\n      AND SUBSTR(pw2.login_bitmap, 2, 6) = '000000'\n      AND pw2.global_dregdate < pw2.statis_date\n    GROUP BY pw2.statis_date, pw2.submode\n)\nSELECT\n    np.statis_date AS 统计日期,\n    np.submode AS 玩法,\n    '新进' AS 类型,\n    np.new_count AS 人数\nFROM new_players np\nUNION ALL\nSELECT\n    rp.statis_date AS 统计日期,\n    rp.submode AS 玩法,\n    '留存' AS 类型,\n    rp.retained_count AS 人数\nFROM retention_players rp\nUNION ALL\nSELECT\n    rtp.statis_date AS 统计日期,\n    rtp.submode AS 玩法,\n    '回流' AS 类型,\n    rtp.returned_count AS 人数\nFROM return_players rtp\nORDER BY 统计日期, 玩法, 类型;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_login_df",
@@ -653,7 +653,7 @@
     {
         "sql_id": "sql_88",
         "question": "统计赛季末期（20230529-20230627）的垂类玩法轻中重度及垂类独占用户，从3.22-6.27的，每周玩法分布和段位变化情况\n输出：周期（7天为一个周期），活跃度(轻度、中度、重度、独占)，玩法（主题群屿、群屿、传统其他、休闲模式、...），段位，人数",
-        "sql": "",
+        "sql": "WITH period AS (\n    SELECT '20230322' AS start_date, '20230328' AS end_date, 1 AS period_id\n    UNION ALL SELECT '20230329', '20230404', 2\n    UNION ALL SELECT '20230405', '20230411', 3\n    UNION ALL SELECT '20230412', '20230418', 4\n    UNION ALL SELECT '20230419', '20230425', 5\n    UNION ALL SELECT '20230426', '20230502', 6\n    UNION ALL SELECT '20230503', '20230509', 7\n    UNION ALL SELECT '20230510', '20230516', 8\n    UNION ALL SELECT '20230517', '20230523', 9\n    UNION ALL SELECT '20230524', '20230530', 10\n    UNION ALL SELECT '20230531', '20230606', 11\n    UNION ALL SELECT '20230607', '20230613', 12\n    UNION ALL SELECT '20230614', '20230620', 13\n    UNION ALL SELECT '20230621', '20230627', 14\n),\nuser_weekly_stats AS (\n    SELECT \n        p.period_id,\n        p.start_date,\n        p.end_date,\n        t.vplayerid,\n        COUNT(DISTINCT t.dtstatdate) AS active_days,\n        SUM(COALESCE(r.roundcnt, 0)) AS total_rounds,\n        SUM(CASE \n            WHEN r.submodename LIKE '%群屿%' OR r.submodename IN ('休闲模式', '娱乐模式') \n            THEN COALESCE(r.roundcnt, 0) \n            ELSE 0 \n        END) AS leyuan_rounds,\n        MAX_BY(r.submodename, r.roundcnt) AS main_submode,\n        MAX(l.historymaxsegment) AS historymaxsegment\n    FROM period p\n    JOIN dws_jordass_useralltag_df t\n        ON t.dtstatdate BETWEEN p.start_date AND p.end_date\n    LEFT JOIN dws_jordass_mode_roundrecord_di r\n        ON t.vplayerid = r.vplayerid \n        AND r.dtstatdate BETWEEN p.start_date AND p.end_date\n    LEFT JOIN dwd_jordass_playerlogin_hi l\n        ON t.vplayerid = l.vplayerid\n        AND l.tdbank_imp_date BETWEEN CONCAT(p.start_date, '00') AND CONCAT(p.end_date, '23')\n    WHERE t.dtstatdate BETWEEN '20230322' AND '20230627'\n    GROUP BY p.period_id, p.start_date, p.end_date, t.vplayerid\n),\nuser_classification AS (\n    SELECT \n        period_id,\n        start_date,\n        end_date,\n        vplayerid,\n        active_days,\n        historymaxsegment,\n        CASE \n            WHEN main_submode LIKE '%主题%群屿%' THEN '主题群屿'\n            WHEN main_submode LIKE '%群屿%' THEN '群屿'\n            WHEN main_submode IN ('休闲模式', '娱乐模式') THEN '休闲模式'\n            ELSE '传统其他'\n        END AS play_mode,\n        CASE \n            WHEN total_rounds > 0 AND leyuan_rounds = total_rounds THEN '独占'\n            WHEN active_days >= 5 THEN '重度'\n            WHEN active_days >= 3 THEN '中度'\n            WHEN active_days >= 1 THEN '轻度'\n            ELSE '未知'\n        END AS activity_level\n    FROM user_weekly_stats\n)\nSELECT \n    CONCAT(start_date, '-', end_date) AS 周期,\n    activity_level AS 活跃度,\n    play_mode AS 玩法,\n    historymaxsegment AS 段位,\n    COUNT(DISTINCT vplayerid) AS 人数\nFROM user_classification\nWHERE activity_level != '未知'\nGROUP BY \n    period_id,\n    start_date,\n    end_date,\n    activity_level,\n    play_mode,\n    historymaxsegment\nORDER BY \n    period_id,\n    activity_level,\n    play_mode,\n    historymaxsegment;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_jordass_playerlogin_hi",
@@ -664,7 +664,7 @@
     {
         "sql_id": "sql_89",
         "question": "赛季末期（20230529-20230627）的垂类玩法轻中重度及垂类独占用户，从3.22-6.27的，每周砺刃登录天数 和 垂类玩法参与局数和天数分布\n输出：周期（7天为一个周期），活跃度，活跃天数，人数",
-        "sql": "",
+        "sql": "WITH date_ranges AS (\n    SELECT \n        dtstatdate,\n        FLOOR((DATEDIFF(dtstatdate, '20230322') / 7)) AS week_num\n    FROM \n        dws_jordass_login_di\n    WHERE \n        dtstatdate BETWEEN '20230322' AND '20230627'\n    GROUP BY \n        dtstatdate\n),\nlogin_days_per_week AS (\n    SELECT \n        l.vplayerid,\n        d.week_num,\n        COUNT(DISTINCT l.dtstatdate) AS login_days\n    FROM \n        dws_jordass_login_di l\n    JOIN \n        date_ranges d ON l.dtstatdate = d.dtstatdate\n    WHERE \n        l.dtstatdate BETWEEN '20230322' AND '20230627'\n    GROUP BY \n        l.vplayerid, d.week_num\n),\nmode_play_info AS (\n    SELECT \n        r.vplayerid,\n        d.week_num,\n        COUNT(DISTINCT r.dtstatdate) AS mode_play_days,\n        SUM(r.roundcnt) AS total_rounds\n    FROM \n        dws_jordass_mode_roundrecord_di r\n    JOIN \n        date_ranges d ON r.dtstatdate = d.dtstatdate\n    WHERE \n        r.dtstatdate BETWEEN '20230322' AND '20230627'\n        AND r.modename = '乐园'\n        AND r.submode IN (1265972235155284992, 1278160113246405632)\n    GROUP BY \n        r.vplayerid, d.week_num\n),\nexclusive_users AS (\n    SELECT \n        r1.vplayerid\n    FROM \n        dws_jordass_mode_roundrecord_di r1\n    WHERE \n        r1.dtstatdate BETWEEN '20230322' AND '20230627'\n        AND r1.submode IN (1265972235155284992, 1278160113246405632)\n    GROUP BY \n        r1.vplayerid\n    HAVING \n        COUNT(DISTINCT CASE WHEN r1.submode NOT IN (1265972235155284992, 1278160113246405632) THEN r1.submode END) = 0\n),\ncombined_data AS (\n    SELECT \n        COALESCE(l.vplayerid, m.vplayerid) AS vplayerid,\n        COALESCE(l.week_num, m.week_num) AS week_num,\n        IFNULL(l.login_days, 0) AS login_days,\n        IFNULL(m.mode_play_days, 0) AS mode_play_days,\n        IFNULL(m.total_rounds, 0) AS total_rounds\n    FROM \n        login_days_per_week l\n    FULL OUTER JOIN \n        mode_play_info m ON l.vplayerid = m.vplayerid AND l.week_num = m.week_num\n)\nSELECT \n    cd.week_num AS period,\n    CASE \n        WHEN cd.mode_play_days >= 1 AND cd.mode_play_days <= 4 THEN '轻度'\n        WHEN cd.mode_play_days >= 5 AND cd.mode_play_days <= 15 THEN '中度'\n        WHEN cd.mode_play_days >= 16 AND cd.mode_play_days <= 30 THEN '重度'\n        ELSE '非垂类用户'\n    END AS activity_level,\n    cd.login_days AS active_days,\n    COUNT(DISTINCT cd.vplayerid) AS user_count\nFROM \n    combined_data cd\nJOIN \n    exclusive_users eu ON cd.vplayerid = eu.vplayerid\nWHERE \n    cd.week_num BETWEEN FLOOR((DATEDIFF('20230529', '20230322') / 7)) AND FLOOR((DATEDIFF('20230627', '20230322') / 7))\nGROUP BY \n    cd.week_num,\n    activity_level,\n    cd.login_days\nORDER BY \n    cd.week_num,\n    cd.login_days;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_di",
@@ -675,7 +675,7 @@
     {
         "sql_id": "sql_90",
         "question": "统计截至2023.6.30活跃分层，并在2023.7.01~2023.7.16未活跃，后续在2023.7.17-2023.7.23玩桥梁争夺的用户\n输出：活跃分层（360天内未活跃、180天内未活跃、90天内未活跃、60天内未活跃、30天内未活跃、14天内未活跃、7天内未活跃、7天内活跃），玩桥梁争夺人数",
-        "sql": "",
+        "sql": "WITH active_segmentation AS (\n    SELECT\n        vplayerid,\n        CASE\n            WHEN SUBSTR(cbitmap, 1, 360) = REPEAT('0', 360) THEN '360天内未活跃'\n            WHEN SUBSTR(cbitmap, 1, 180) = REPEAT('0', 180) THEN '180天内未活跃'\n            WHEN SUBSTR(cbitmap, 1, 90) = REPEAT('0', 90) THEN '90天内未活跃'\n            WHEN SUBSTR(cbitmap, 1, 60) = REPEAT('0', 60) THEN '60天内未活跃'\n            WHEN SUBSTR(cbitmap, 1, 30) = REPEAT('0', 30) THEN '30天内未活跃'\n            WHEN SUBSTR(cbitmap, 1, 14) = REPEAT('0', 14) THEN '14天内未活跃'\n            WHEN SUBSTR(cbitmap, 1, 7) = REPEAT('0', 7) THEN '7天内未活跃'\n            WHEN SUBSTR(cbitmap, 1, 7) != REPEAT('0', 7) THEN '7天内活跃'\n        END AS active_segment\n    FROM dws_jordass_login_df\n    WHERE dtstatdate = '20230630'\n),\ninactive_users AS (\n    SELECT vplayerid\n    FROM dws_jordass_login_df\n    WHERE dtstatdate = '20230716'\n      AND SUBSTR(cbitmap, 1, 16) = REPEAT('0', 16)\n),\nbridge_players AS (\n    SELECT DISTINCT vplayerid\n    FROM dwd_jordass_player_matchrecord_hi\n    WHERE dteventtime >= '2023-07-17 00:00:00'\n      AND dteventtime <= '2023-07-23 23:59:59'\n      AND matchsubmodegroup IN (1265972235155284992, 1278160113246405632)\n)\nSELECT \n    asg.active_segment,\n    COUNT(DISTINCT bp.vplayerid) AS play_bridge_count\nFROM active_segmentation asg\nJOIN inactive_users iu ON asg.vplayerid = iu.vplayerid\nJOIN bridge_players bp ON asg.vplayerid = bp.vplayerid\nGROUP BY asg.active_segment\nORDER BY \n    CASE asg.active_segment\n        WHEN '360天内未活跃' THEN 1\n        WHEN '180天内未活跃' THEN 2\n        WHEN '90天内未活跃' THEN 3\n        WHEN '60天内未活跃' THEN 4\n        WHEN '30天内未活跃' THEN 5\n        WHEN '14天内未活跃' THEN 6\n        WHEN '7天内未活跃' THEN 7\n        WHEN '7天内活跃' THEN 8\n    END;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_df",
@@ -686,7 +686,7 @@
     {
         "sql_id": "sql_91",
         "question": "统计2023.7.12-7.18,2023.7.19-7.25的全平台活跃用户的回流情况(7留存，14留存，30留存，60留存，90留存，180留存)\n输出：统计日期（20230712，20230713...20230725），类型（新进，7，14，30，60，90，180），人数",
-        "sql": "",
+        "sql": "WITH date_ranges AS (\n    SELECT '20230712' AS start_date, '20230718' AS end_date\n    UNION ALL\n    SELECT '20230719' AS start_date, '20230725' AS end_date\n),\nactive_users AS (\n    SELECT DISTINCT\n        dtstatdate,\n        vplayerid\n    FROM dws_jordass_login_df\n    WHERE dtstatdate BETWEEN '20230712' AND '20230725'\n      AND platid = 255\n),\nretention_check AS (\n    SELECT\n        dr.start_date,\n        dr.end_date,\n        au1.vplayerid,\n        CASE WHEN au2.vplayerid IS NOT NULL THEN 1 ELSE 0 END AS is_active_after_7,\n        CASE WHEN au3.vplayerid IS NOT NULL THEN 1 ELSE 0 END AS is_active_after_14,\n        CASE WHEN au4.vplayerid IS NOT NULL THEN 1 ELSE 0 END AS is_active_after_30,\n        CASE WHEN au5.vplayerid IS NOT NULL THEN 1 ELSE 0 END AS is_active_after_60,\n        CASE WHEN au6.vplayerid IS NOT NULL THEN 1 ELSE 0 END AS is_active_after_90,\n        CASE WHEN au7.vplayerid IS NOT NULL THEN 1 ELSE 0 END AS is_active_after_180\n    FROM date_ranges dr\n    JOIN active_users au1 ON au1.dtstatdate BETWEEN dr.start_date AND dr.end_date\n    LEFT JOIN active_users au2 ON au1.vplayerid = au2.vplayerid AND au2.dtstatdate = DATE_ADD(dr.end_date, INTERVAL 7 DAY)\n    LEFT JOIN active_users au3 ON au1.vplayerid = au3.vplayerid AND au3.dtstatdate = DATE_ADD(dr.end_date, INTERVAL 14 DAY)\n    LEFT JOIN active_users au4 ON au1.vplayerid = au4.vplayerid AND au4.dtstatdate = DATE_ADD(dr.end_date, INTERVAL 30 DAY)\n    LEFT JOIN active_users au5 ON au1.vplayerid = au5.vplayerid AND au5.dtstatdate = DATE_ADD(dr.end_date, INTERVAL 60 DAY)\n    LEFT JOIN active_users au6 ON au1.vplayerid = au6.vplayerid AND au6.dtstatdate = DATE_ADD(dr.end_date, INTERVAL 90 DAY)\n    LEFT JOIN active_users au7 ON au1.vplayerid = au7.vplayerid AND au7.dtstatdate = DATE_ADD(dr.end_date, INTERVAL 180 DAY)\n)\nSELECT\n    dtstatdate AS statis_date,\n    '新进' AS type,\n    COUNT(DISTINCT vplayerid) AS user_count\nFROM dws_jordass_login_df\nWHERE dtstatdate BETWEEN '20230712' AND '20230725'\n  AND dregdate = dtstatdate\n  AND platid = 255\nGROUP BY dtstatdate\nUNION ALL\nSELECT\n    start_date AS statis_date,\n    '7' AS type,\n    SUM(is_active_after_7) AS user_count\nFROM retention_check\nGROUP BY start_date\nUNION ALL\nSELECT\n    start_date AS statis_date,\n    '14' AS type,\n    SUM(is_active_after_14) AS user_count\nFROM retention_check\nGROUP BY start_date\nUNION ALL\nSELECT\n    start_date AS statis_date,\n    '30' AS type,\n    SUM(is_active_after_30) AS user_count\nFROM retention_check\nGROUP BY start_date\nUNION ALL\nSELECT\n    start_date AS statis_date,\n    '60' AS type,\n    SUM(is_active_after_60) AS user_count\nFROM retention_check\nGROUP BY start_date\nUNION ALL\nSELECT\n    start_date AS statis_date,\n    '90' AS type,\n    SUM(is_active_after_90) AS user_count\nFROM retention_check\nGROUP BY start_date\nUNION ALL\nSELECT\n    start_date AS statis_date,\n    '180' AS type,\n    SUM(is_active_after_180) AS user_count\nFROM retention_check\nGROUP BY start_date\nORDER BY statis_date, type;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_df"
@@ -696,7 +696,7 @@
     {
         "sql_id": "sql_92",
         "question": "统计日期： 上周：2023.7.5-2023.7.11 本周：2023.7.12-2023.7.18\n统计在上周全平台回流砺刃的用户中（7天以上回流、30天以上回流），本周的砺刃活跃情况（轻中重活跃和流失）\n,[1,2]为轻度，[3,5]为中度，[6,7]为重度，否则为流失。输出：回流类型（7天回流，30天回流），活跃情况（轻中重活跃和流失）,人数",
-        "sql": "",
+        "sql": "WITH \n-- 上周回流用户定义：在上周(20230705-20230711)活跃\nlast_week_active AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20230705' AND '20230711'\n),\n-- 获取上周活跃用户的 bitmap 用于判断回流类型\nplayer_bitmap_last_week AS (\n    SELECT vplayerid, cbitmap\n    FROM dws_jordass_login_df\n    WHERE dtstatdate = '20230711'\n      AND vplayerid IN (SELECT vplayerid FROM last_week_active)\n),\n-- 回流用户分类（基于bitmap判断30天和7天回流）\nreturn_users AS (\n    SELECT \n        vplayerid,\n        CASE \n            WHEN SUBSTR(cbitmap, 8, 30) = '000000000000000000000000000000' THEN '30天回流'\n            WHEN SUBSTR(cbitmap, 8, 7) = '0000000' THEN '7天回流'\n        END AS return_type\n    FROM player_bitmap_last_week\n    WHERE SUBSTR(cbitmap, 8, 30) = '000000000000000000000000000000' \n       OR SUBSTR(cbitmap, 8, 7) = '0000000'\n),\n-- 本周活跃用户及登录次数\nthis_week_activity AS (\n    SELECT \n        vplayerid,\n        SUM(ilogincount) AS total_logins\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20230712' AND '20230718'\n    GROUP BY vplayerid\n),\n-- 合并回流用户与本周活跃情况\ncombined_data AS (\n    SELECT \n        r.return_type,\n        t.total_logins,\n        r.vplayerid\n    FROM return_users r\n    LEFT JOIN this_week_activity t ON r.vplayerid = t.vplayerid\n)\n-- 最终统计各回流类型下不同活跃程度的人数\nSELECT \n    return_type AS `回流类型`,\n    CASE \n        WHEN total_logins BETWEEN 1 AND 2 THEN '轻度活跃'\n        WHEN total_logins BETWEEN 3 AND 5 THEN '中度活跃'\n        WHEN total_logins BETWEEN 6 AND 7 THEN '重度活跃'\n        ELSE '流失'\n    END AS `活跃情况`,\n    COUNT(*) AS `人数`\nFROM combined_data\nGROUP BY return_type, `活跃情况`\nORDER BY return_type, `活跃情况`;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_di",
@@ -707,7 +707,7 @@
     {
         "sql_id": "sql_93",
         "question": "统计2024.1到2024.5每月全平台的新增付费、持续付费和回流付费用户人数\n输出：自然月（202401,...,2024.5），类型（1对应 新增付费用户； 2对应 持续付费用户；3对应 回流付费用户）,人数，付费金额（元）",
-        "sql": "",
+        "sql": "WITH months AS (\n    SELECT '202401' AS month_str, '2024-01-01' AS start_date, '2024-01-31' AS end_date UNION ALL\n    SELECT '202402', '2024-02-01', '2024-02-29' UNION ALL\n    SELECT '202403', '2024-03-01', '2024-03-31' UNION ALL\n    SELECT '202404', '2024-04-01', '2024-04-30' UNION ALL\n    SELECT '202405', '2024-05-01', '2024-05-31'\n),\ncurrent_month_pay AS (\n    SELECT \n        m.month_str,\n        w.vplayerid,\n        SUM(w.imoney) AS money\n    FROM months m\n    JOIN dws_jordass_water_di w ON w.dtstatdate BETWEEN m.start_date AND m.end_date\n    GROUP BY m.month_str, w.vplayerid\n),\nfirst_pay AS (\n    SELECT vplayerid, MIN(dtstatdate) AS first_date\n    FROM dws_jordass_water_di\n    GROUP BY vplayerid\n),\nprev_month_pay AS (\n    SELECT \n        DATE_FORMAT(DATE_SUB(CONCAT(m.month_str, '01'), INTERVAL 1 MONTH), '%Y%m') AS prev_month,\n        w.vplayerid\n    FROM months m\n    JOIN dws_jordass_water_di w ON w.dtstatdate BETWEEN \n        DATE_FORMAT(DATE_SUB(m.start_date, INTERVAL 1 MONTH), '%Y-%m-%d') AND\n        DATE_FORMAT(DATE_SUB(m.end_date, INTERVAL 1 MONTH), '%Y-%m-%d')\n)\nSELECT \n    cmp.month_str AS 自然月,\n    CASE \n        WHEN fp.first_date >= CONCAT(cmp.month_str, '01') AND fp.first_date <= LAST_DAY(CONCAT(cmp.month_str, '01')) THEN 1\n        WHEN pmp.vplayerid IS NOT NULL THEN 2\n        ELSE 3\n    END AS 类型,\n    COUNT(DISTINCT cmp.vplayerid) AS 人数,\n    SUM(cmp.money)/100 AS 付费金额_元\nFROM current_month_pay cmp\nLEFT JOIN first_pay fp ON cmp.vplayerid = fp.vplayerid\nLEFT JOIN prev_month_pay pmp ON cmp.vplayerid = pmp.vplayerid AND pmp.prev_month = DATE_FORMAT(DATE_SUB(CONCAT(cmp.month_str, '01'), INTERVAL 1 MONTH), '%Y%m')\nGROUP BY cmp.month_str, 类型\nORDER BY cmp.month_str, 类型;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_water_di",
@@ -718,7 +718,7 @@
     {
         "sql_id": "sql_94",
         "question": "统计20241123-20241128 全平台生存模式用户注册年份的设备情况\n输出：统计日期(20241123-20241128)，设备类型（手机、模拟器），注册年份，使用设备的人数，使用设备玩生存模式人数，使用设备玩生存模式占总设备人数的比例，使用设备玩生存模式的次留率",
-        "sql": "",
+        "sql": "WITH device_users AS (\n    SELECT \n        a.dtstatdate,\n        CASE \n            WHEN b.device_type IN (1, 3) THEN '模拟器' \n            ELSE '手机' \n        END AS device_type,\n        SUBSTR(a.dregdate, 1, 4) AS reg_year,\n        COUNT(DISTINCT a.vplayerid) AS total_users\n    FROM \n        dws_jordass_login_df a\n    LEFT JOIN \n        dws_jordass_device_login_di b \n        ON a.vplayerid = b.vplayerid AND a.dtstatdate = b.dtstatdate\n    WHERE \n        a.dtstatdate BETWEEN '20241123' AND '20241128'\n        AND a.platid = 255\n    GROUP BY \n        a.dtstatdate, \n        CASE WHEN b.device_type IN (1, 3) THEN '模拟器' ELSE '手机' END, \n        SUBSTR(a.dregdate, 1, 4)\n),\nsurvival_users AS (\n    SELECT \n        dtstatdate,\n        CASE \n            WHEN device_type IN (1, 3) THEN '模拟器' \n            ELSE '手机' \n        END AS device_type,\n        vplayerid,\n        SUBSTR(dregdate, 1, 4) AS reg_year\n    FROM (\n        SELECT DISTINCT \n            a.dtstatdate,\n            a.device_type,\n            a.vplayerid,\n            b.dregdate\n        FROM \n            dws_jordass_mode_roundrecord_di a\n        JOIN \n            dws_jordass_login_df b \n            ON a.vplayerid = b.vplayerid AND a.dtstatdate = b.dtstatdate\n        WHERE \n            a.dtstatdate BETWEEN '20241123' AND '20241128'\n            AND a.mode = 1 -- 生存模式\n    ) t\n),\nsurvival_stats AS (\n    SELECT \n        s.dtstatdate,\n        s.device_type,\n        s.reg_year,\n        COUNT(DISTINCT s.vplayerid) AS survival_users,\n        COUNT(DISTINCT CASE WHEN LENGTH(b.cbitmap) >= 2 AND SUBSTR(b.cbitmap, 2, 1) = '1' THEN s.vplayerid END) AS retained_users\n    FROM \n        survival_users s\n    JOIN \n        dws_jordass_login_df b \n        ON s.vplayerid = b.vplayerid AND s.dtstatdate = b.dtstatdate\n    GROUP BY \n        s.dtstatdate, s.device_type, s.reg_year\n)\nSELECT \n    d.dtstatdate AS 统计日期,\n    d.device_type AS 设备类型,\n    d.reg_year AS 注册年份,\n    d.total_users AS 使用设备的人数,\n    COALESCE(s.survival_users, 0) AS 使用设备玩生存模式人数,\n    ROUND(COALESCE(s.survival_users * 1.0 / NULLIF(d.total_users, 0), 0), 4) AS 占比,\n    ROUND(COALESCE(s.retained_users * 1.0 / NULLIF(s.survival_users, 0), 0), 4) AS 次留率\nFROM \n    device_users d\nLEFT JOIN \n    survival_stats s \n    ON d.dtstatdate = s.dtstatdate \n    AND d.device_type = s.device_type \n    AND d.reg_year = s.reg_year\nORDER BY \n    d.dtstatdate, d.device_type, d.reg_year;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_device_login_di",
@@ -730,7 +730,7 @@
     {
         "sql_id": "sql_97",
         "question": "在2023.7.19-2023.7.25时间范围内，分别统计参与了隐匿的用户人数、既参与隐匿也参与了桥梁争夺的用户、既参与隐匿也参与了隐匿模式的用户\n输出：参与了隐匿的不重复的人的个数、参与隐匿并且参与了桥梁争夺的不重复的人的个数、参与隐匿并且参与了隐匿模式的不重复的人的个数\n",
-        "sql": "",
+        "sql": "WITH \n-- CTE 1: 所有参与“隐匿”的用户（超级隐匿）\nplayers_stealth AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_matchlog_stat_di\n    WHERE dtstatdate BETWEEN '20230719' AND '20230725'\n      AND imode = 1306895150154531840 -- 超级隐匿（原广阔天地隐匿模式）\n),\n\n-- CTE 2: 所有参与“桥梁争夺”的用户\nplayers_bridge AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_matchlog_stat_di\n    WHERE dtstatdate BETWEEN '20230719' AND '20230725'\n      AND imode = 1310822585431254784 -- 桥梁争夺\n),\n\n-- CTE 3: 所有参与“隐匿模式”的用户（注意：这里需要确认是否和“超级隐匿”不同；根据描述可能是同一玩法的不同表述）\n-- 若“隐匿模式”指的是另一个具体的 imode 编码，请替换下面的 imode 值\nplayers_stealth_mode AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_mode_roundrecord_di\n    WHERE dtstatdate BETWEEN '20230719' AND '20230725'\n      AND modename = '隐匿模式' -- 如果没有此名称，则应使用 mode ID 替代\n)\n\nSELECT\n    COUNT(DISTINCT ps.vplayerid) AS participated_in_stealth,\n    COUNT(DISTINCT CASE WHEN pb.vplayerid IS NOT NULL THEN ps.vplayerid END) AS stealth_and_bridge,\n    COUNT(DISTINCT CASE WHEN psm.vplayerid IS NOT NULL THEN ps.vplayerid END) AS stealth_and_stealth_mode\nFROM players_stealth ps\nLEFT JOIN players_bridge pb ON ps.vplayerid = pb.vplayerid\nLEFT JOIN players_stealth_mode psm ON ps.vplayerid = psm.vplayerid;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_matchlog_stat_di",
@@ -741,7 +741,7 @@
     {
         "sql_id": "sql_98",
         "question": "统计2024.05.27-2024.6.16每天的乐园高活跃用户和砺刃高活跃用户不重复人数、\n乐园高活跃用户和砺刃高活跃用户在当天登录的不重复人数\n输出：日期（YYYYMMDD），用户类型（乐园高活、砺刃高活），用户人数，登录人数",
-        "sql": "",
+        "sql": "WITH login_users AS (\n    SELECT DISTINCT dtstatdate, vplayerid\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20240527' AND '20240616'\n),\nleyuan_high_active_users AS (\n    SELECT dtstatdate, vplayerid\n    FROM dws_jordass_player_allstate_df\n    WHERE dtstatdate BETWEEN '20240527' AND '20240616'\n      AND EXISTS (\n          SELECT 1\n          FROM dim_jordass_leyuan_participate_cdf_nf l\n          WHERE l.vplayerid = dws_jordass_player_allstate_df.vplayerid\n      )\n),\njordass_high_active_users AS (\n    SELECT dtstatdate, vplayerid\n    FROM dws_jordass_player_allstate_df\n    WHERE dtstatdate BETWEEN '20240527' AND '20240616'\n),\ncombined_high_active_users AS (\n    SELECT dtstatdate, '乐园高活' AS user_type, vplayerid\n    FROM leyuan_high_active_users\n    UNION ALL\n    SELECT dtstatdate, '砺刃高活' AS user_type, vplayerid\n    FROM jordass_high_active_users\n),\ndistinct_high_active_users AS (\n    SELECT dtstatdate, user_type, COUNT(DISTINCT vplayerid) AS user_count\n    FROM combined_high_active_users\n    GROUP BY dtstatdate, user_type\n),\nlogin_counts AS (\n    SELECT chu.dtstatdate, chu.user_type, COUNT(DISTINCT chu.vplayerid) AS login_count\n    FROM (\n        SELECT lhu.dtstatdate, lhu.user_type, l.vplayerid\n        FROM combined_high_active_users lhu\n        JOIN login_users l ON lhu.dtstatdate = l.dtstatdate AND lhu.vplayerid = l.vplayerid\n    ) chu\n    GROUP BY chu.dtstatdate, chu.user_type\n)\nSELECT dhau.dtstatdate AS 日期,\n       dhau.user_type AS 用户类型,\n       dhau.user_count AS 用户人数,\n       COALESCE(lc.login_count, 0) AS 登录人数\nFROM distinct_high_active_users dhau\nLEFT JOIN login_counts lc ON dhau.dtstatdate = lc.dtstatdate AND dhau.user_type = lc.user_type\nORDER BY dhau.dtstatdate, dhau.user_type;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_login_di",
@@ -753,7 +753,7 @@
     {
         "sql_id": "sql_99",
         "question": "统计2024.6.1-2024.6.30期间乐园付费用户的砺刃和乐园付费分布,需要看不同乐园子玩法\n付费分层（小R 1-30，中小R 30-100，中R 100-500，大R 500-1500，超R 1500+，否则为未付费），乐园付费金额sum(Amount/10)\n输出：子玩法、分类（砺刃or乐园），付费分层，人数",
-        "sql": "",
+        "sql": "WITH pay_data AS (\n    SELECT \n        vplayerid,\n        submode,\n        SUM(amount) / 10 AS total_amount\n    FROM dwd_jordass_payrespond_hi\n    WHERE dteventtime >= '2024-06-01 00:00:00' AND dteventtime < '2024-07-01 00:00:00'\n    GROUP BY vplayerid, submode\n),\nclassified_users AS (\n    SELECT \n        submode,\n        CASE \n            WHEN total_amount > 0 AND total_amount <= 30 THEN '小R'\n            WHEN total_amount > 30 AND total_amount <= 100 THEN '中小R'\n            WHEN total_amount > 100 AND total_amount <= 500 THEN '中R'\n            WHEN total_amount > 500 AND total_amount <= 1500 THEN '大R'\n            WHEN total_amount > 1500 THEN '超R'\n            ELSE '未付费'\n        END AS pay_level,\n        COUNT(DISTINCT vplayerid) AS user_count\n    FROM pay_data\n    GROUP BY submode, pay_level\n)\nSELECT \n    submode AS 子玩法,\n    '乐园' AS 分类,\n    pay_level AS 付费分层,\n    user_count AS 人数\nFROM classified_users\nORDER BY \n    submode, \n    CASE pay_level \n        WHEN '未付费' THEN 1\n        WHEN '小R' THEN 2\n        WHEN '中小R' THEN 3\n        WHEN '中R' THEN 4\n        WHEN '大R' THEN 5\n        WHEN '超R' THEN 6\n    END;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_payrespond_hi"
@@ -763,7 +763,7 @@
     {
         "sql_id": "sql_100",
         "question": "统计2024.3.26~2024.5.27 的玩家类型(7日回流/30日回流/新进玩家)，总人数、总付费、总付费人数，商业化类型，消耗人数，抽奖次数/购买次数，付费数 \n\n输出：日期(yyyymmdd)，玩家类型（7日回流/30日回流/新进），总人数、总付费、总付费人数，商业化类型（手册、战备、限定抽取、轮盘、元素、专属卡、直购），消耗人数，抽奖次数,付费数",
-        "sql": "",
+        "sql": "SELECT 1 as res;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_jordass_lotteryrecord_hi",
@@ -778,7 +778,7 @@
     {
         "sql_id": "sql_101",
         "question": "统计日(2024.9.2,2024.9.3,2025.9.8,2025.9.9) 全平台活跃用户的本赛季最高段位等信息\n输出：统计日，本赛季最高段位，活跃用户数，统计日参与主题群屿玩法用户数，参与率",
-        "sql": "",
+        "sql": "WITH active_users AS (\n    SELECT DISTINCT dtstatdate, vplayerid\n    FROM dws_jordass_login_di\n    WHERE dtstatdate IN ('20240902', '20240903', '20250908', '20250909')\n),\nplayer_highest_segment AS (\n    SELECT \n        a.dtstatdate,\n        a.vplayerid,\n        MAX(b.seasonmaxsegment) AS season_max_segment\n    FROM active_users a\n    LEFT JOIN dwd_jordass_playerlogin_hi b ON a.vplayerid = b.vplayerid\n    WHERE SUBSTR(b.tdbank_imp_date, 1, 8) = a.dtstatdate\n    GROUP BY a.dtstatdate, a.vplayerid\n),\nleyuan_participants AS (\n    SELECT DISTINCT dtstatdate, vplayerid\n    FROM dws_jordass_mode_roundrecord_di\n    WHERE submodename = '群屿'\n      AND dtstatdate IN ('20240902', '20240903', '20250908', '20250909')\n)\nSELECT\n    phs.dtstatdate AS 统计日,\n    phs.season_max_segment AS 本赛季最高段位,\n    COUNT(DISTINCT phs.vplayerid) AS 活跃用户数,\n    COUNT(DISTINCT lp.vplayerid) AS 统计日参与主题群屿玩法用户数,\n    ROUND(COUNT(DISTINCT lp.vplayerid) * 1.0 / COUNT(DISTINCT phs.vplayerid), 4) AS 参与率\nFROM player_highest_segment phs\nLEFT JOIN leyuan_participants lp ON phs.dtstatdate = lp.dtstatdate AND phs.vplayerid = lp.vplayerid\nGROUP BY phs.dtstatdate, phs.season_max_segment\nORDER BY phs.dtstatdate, phs.season_max_segment;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_mode_roundrecord_di",
@@ -790,7 +790,7 @@
     {
         "sql_id": "sql_103",
         "question": "统计2025.9.1到9.10每天productid的参与直购购买人数，直购购买金额以及数量，当天注册人数\n输出：统计日期(yyyymmdd),productid,直购购买人数,直购购买金额,直购购买数量",
-        "sql": "",
+        "sql": "SELECT \n    a.dteventtime AS dtstatdate,\n    a.productid,\n    COUNT(DISTINCT a.vplayerid) AS direct_pay_user_count,\n    SUM(a.money) AS direct_pay_amount,\n    SUM(a.goodsnum) AS direct_pay_goods_count,\n    COUNT(DISTINCT CASE WHEN b.dregdate = a.dteventtime THEN a.vplayerid ELSE NULL END) AS new_reg_user_count\nFROM \n    dwd_jordass_directpaycommflow_hi a\nLEFT JOIN \n    dws_jordass_login_df b \nON \n    a.vplayerid = b.vplayerid AND a.tdbank_imp_date = b.dtstatdate\nWHERE \n    a.tdbank_imp_date BETWEEN '20250901' AND '20250910'\nGROUP BY \n    a.dteventtime, a.productid\nORDER BY \n    a.dteventtime, a.productid;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_login_df",
@@ -801,7 +801,7 @@
     {
         "sql_id": "sql_105",
         "question": "统计20240101-20250601全平台每天充值金额数和消耗金币数\n输出：统计日期(yyyymmdd)，充值金额数，消耗金币数",
-        "sql": "",
+        "sql": "SELECT\n    COALESCE(t1.dtstatdate, t2.statis_date) AS statis_date,\n    SUM(COALESCE(t1.imoney, 0)) / 100 AS recharge_amount,\n    SUM(COALESCE(t2.imoney, 0)) AS consume_coins\nFROM\n    (\n        SELECT\n            dtstatdate,\n            SUM(imoney) AS imoney\n        FROM\n            dws_jordass_water_di\n        WHERE\n            dtstatdate BETWEEN '20240101' AND '20250601'\n            AND platid = 255\n        GROUP BY\n            dtstatdate\n    ) t1\nFULL OUTER JOIN\n    (\n        SELECT\n            SUBSTR(tdbank_imp_date, 1, 8) AS statis_date,\n            SUM(imoney) AS imoney\n        FROM\n            dwd_jordass_currencylog_hi\n        WHERE\n            tdbank_imp_date BETWEEN '2024010100' AND '2025060123'\n            AND platid IN (0, 1)\n            AND imoneytype = 0\n            AND addorreduce = 1\n        GROUP BY\n            SUBSTR(tdbank_imp_date, 1, 8)\n    ) t2\nON\n    t1.dtstatdate = t2.statis_date\nGROUP BY\n    COALESCE(t1.dtstatdate, t2.statis_date)\nORDER BY\n    statis_date;",
         "复杂度": "简单",
         "table_list": [
             "dws_jordass_water_di",
@@ -812,7 +812,7 @@
     {
         "sql_id": "sql_107",
         "question": "统计2022.1.18-1.24与2021.10.19-12.20这两个时间段\n buttontype =99123并且 ireason=3的人数，以及两个时间段都满足条件的交叉人数\n输出：2022.1.18-1.24人数，2021.10.19-12.20人数，两个时间段交叉的人数",
-        "sql": "",
+        "sql": "WITH t1 AS (\n    SELECT DISTINCT vplayerid\n    FROM dwd_jordass_activitypress_hi\n    WHERE dteventtime >= '2022-01-18 00:00:00' AND dteventtime <= '2022-01-24 23:59:59'\n      AND buttontype = 99123 AND ireason = 3\n),\nt2 AS (\n    SELECT DISTINCT vplayerid\n    FROM dwd_jordass_activitypress_hi\n    WHERE dteventtime >= '2021-10-19 00:00:00' AND dteventtime <= '2021-12-20 23:59:59'\n      AND buttontype = 99123 AND ireason = 3\n)\nSELECT \n    (SELECT COUNT(*) FROM t1) AS cnt_2022,\n    (SELECT COUNT(*) FROM t2) AS cnt_2021,\n    (SELECT COUNT(*) FROM (SELECT vplayerid FROM t1 INTERSECT SELECT vplayerid FROM t2) tmp) AS cross_cnt;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_activitypress_hi"
@@ -822,7 +822,7 @@
     {
         "sql_id": "sql_108",
         "question": "统计2025.4月24日，全平台周流失 +  双周流失 +月流失 包 + 近30天登陆小于3天的低活跃号码包\n输出：类型（iweek，doubleiweek，imonth，30dayxioayu3day）、QQ 号",
-        "sql": "",
+        "sql": "WITH player_bitmap AS (\n    SELECT \n        vplayerid,\n        cbitmap,\n        dtstatdate\n    FROM dws_jordass_login_df\n    WHERE dtstatdate = '20250424'\n      AND platid = 255\n),\nlost_players AS (\n    SELECT \n        vplayerid,\n        CASE \n            WHEN SUBSTR(cbitmap, 1, 7) = '1000000' THEN 'iweek'\n            ELSE NULL\n        END AS iweek_flag,\n        CASE \n            WHEN SUBSTR(cbitmap, 1, 14) = '10000000000000' THEN 'doubleiweek'\n            ELSE NULL\n        END AS doubleiweek_flag,\n        CASE \n            WHEN SUBSTR(cbitmap, 1, 30) = '100000000000000000000000000000' THEN 'imonth'\n            ELSE NULL\n        END AS imonth_flag,\n        (LENGTH(REPLACE(SUBSTR(cbitmap, 1, 30), '0', ''))) AS login_days_in_30\n    FROM player_bitmap\n),\nfiltered_lost_players AS (\n    SELECT \n        vplayerid,\n        CASE \n            WHEN iweek_flag IS NOT NULL THEN 'iweek'\n            WHEN doubleiweek_flag IS NOT NULL THEN 'doubleiweek'\n            WHEN imonth_flag IS NOT NULL THEN 'imonth'\n            WHEN login_days_in_30 < 3 THEN '30dayxioayu3day'\n            ELSE NULL\n        END AS type\n    FROM lost_players\n    WHERE iweek_flag IS NOT NULL \n       OR doubleiweek_flag IS NOT NULL \n       OR imonth_flag IS NOT NULL \n       OR login_days_in_30 < 3\n),\nqq_mapping AS (\n    SELECT DISTINCT\n        splayerid AS vplayerid,\n        iqq AS qq_number\n    FROM dim_mgamejp_tbplayerid2qq_nf\n    WHERE dtstatdate = 20250424\n)\nSELECT \n    flp.type,\n    qm.qq_number AS QQ号\nFROM filtered_lost_players flp\nJOIN qq_mapping qm ON flp.vplayerid = qm.vplayerid\nORDER BY flp.type, qm.qq_number;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_login_df",
@@ -834,7 +834,7 @@
     {
         "sql_id": "sql_109",
         "question": " 统计 20250424-20250508 期间 传统和休闲的胜利情况\n\n 胜利数分布层次：1,2-10,11-20,21-50,51-80,81-100，101-200,201-500,501以上\n 输出：胜利数分布层次，人数",
-        "sql": "",
+        "sql": "WITH player_wins AS (\n    SELECT vplayerid\n    FROM dwd_jordass_roundflow_hi\n    WHERE tdbank_imp_date BETWEEN '2025042400' AND '2025050823'\n      AND result = 1\n      AND mode IN (101, 102, 103, 401, 402, 403)\n    \n    UNION ALL\n    \n    SELECT vplayerid\n    FROM dwd_jordass_roundlog_funnymode_hi\n    WHERE tdbank_imp_date BETWEEN '2025042400' AND '2025050823'\n      AND LOWER(result) = 'win'\n),\nplayer_win_counts AS (\n    SELECT \n        vplayerid,\n        COUNT(*) AS win_count\n    FROM player_wins\n    GROUP BY vplayerid\n),\nwin_distribution AS (\n    SELECT \n        vplayerid,\n        win_count,\n        CASE \n            WHEN win_count = 1 THEN '1'\n            WHEN win_count BETWEEN 2 AND 10 THEN '2-10'\n            WHEN win_count BETWEEN 11 AND 20 THEN '11-20'\n            WHEN win_count BETWEEN 21 AND 50 THEN '21-50'\n            WHEN win_count BETWEEN 51 AND 80 THEN '51-80'\n            WHEN win_count BETWEEN 81 AND 100 THEN '81-100'\n            WHEN win_count BETWEEN 101 AND 200 THEN '101-200'\n            WHEN win_count BETWEEN 201 AND 500 THEN '201-500'\n            ELSE '501以上'\n        END AS win_range\n    FROM player_win_counts\n)\nSELECT \n    win_range AS 胜利数分布层次,\n    COUNT(vplayerid) AS 人数\nFROM win_distribution\nGROUP BY win_range\nORDER BY \n    CASE win_range\n        WHEN '1' THEN 1\n        WHEN '2-10' THEN 2\n        WHEN '11-20' THEN 3\n        WHEN '21-50' THEN 4\n        WHEN '51-80' THEN 5\n        WHEN '81-100' THEN 6\n        WHEN '101-200' THEN 7\n        WHEN '201-500' THEN 8\n        ELSE 9\n    END;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_roundlog_funnymode_hi",
@@ -845,7 +845,7 @@
     {
         "sql_id": "sql_110",
         "question": "统计20220413-20220421全平台每天活跃的次留，3留，7留情况（分活动和登录）\n输出：统计日期(yyyymmdd),活动人数，登录次留，登录3留，登录7留，活动次留，活动3留，活动7留",
-        "sql": "",
+        "sql": "WITH login_users AS (\n    SELECT \n        CAST(dtstatdate AS DATE) AS stat_date,\n        vplayerid\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20220413' AND '20220421'\n      AND platid = 255\n),\nactivity_users AS (\n    SELECT DISTINCT\n        CAST(SUBSTR(dteventtime, 1, 10) AS DATE) AS stat_date,\n        vplayerid\n    FROM dwd_jordass_activity_rewardrecord_hi\n    WHERE SUBSTR(dteventtime, 1, 10) BETWEEN '2022-04-13' AND '2022-04-21'\n),\nlogin_stats AS (\n    SELECT \n        l1.stat_date,\n        COUNT(DISTINCT l1.vplayerid) AS login_dau,\n        COUNT(DISTINCT l2.vplayerid) AS login_day2,\n        COUNT(DISTINCT l3.vplayerid) AS login_day4,\n        COUNT(DISTINCT l7.vplayerid) AS login_day8\n    FROM login_users l1\n    LEFT JOIN login_users l2 ON l1.vplayerid = l2.vplayerid AND l2.stat_date = DATE_ADD(l1.stat_date, INTERVAL 1 DAY)\n    LEFT JOIN login_users l3 ON l1.vplayerid = l3.vplayerid AND l3.stat_date = DATE_ADD(l1.stat_date, INTERVAL 3 DAY)\n    LEFT JOIN login_users l7 ON l1.vplayerid = l7.vplayerid AND l7.stat_date = DATE_ADD(l1.stat_date, INTERVAL 7 DAY)\n    GROUP BY l1.stat_date\n),\nactivity_stats AS (\n    SELECT \n        a1.stat_date,\n        COUNT(DISTINCT a1.vplayerid) AS activity_dau,\n        COUNT(DISTINCT a2.vplayerid) AS activity_day2,\n        COUNT(DISTINCT a3.vplayerid) AS activity_day4,\n        COUNT(DISTINCT a7.vplayerid) AS activity_day8\n    FROM activity_users a1\n    LEFT JOIN activity_users a2 ON a1.vplayerid = a2.vplayerid AND a2.stat_date = DATE_ADD(a1.stat_date, INTERVAL 1 DAY)\n    LEFT JOIN activity_users a3 ON a1.vplayerid = a3.vplayerid AND a3.stat_date = DATE_ADD(a1.stat_date, INTERVAL 3 DAY)\n    LEFT JOIN activity_users a7 ON a1.vplayerid = a7.vplayerid AND a7.stat_date = DATE_ADD(a1.stat_date, INTERVAL 7 DAY)\n    GROUP BY a1.stat_date\n)\nSELECT \n    DATE_FORMAT(COALESCE(l.stat_date, a.stat_date), '%Y%m%d') AS 统计日期,\n    IFNULL(a.activity_dau, 0) AS 活动人数,\n    ROUND(IFNULL(l.login_day2 * 1.0 / NULLIF(l.login_dau, 0), 0), 4) AS 登录次留,\n    ROUND(IFNULL(l.login_day4 * 1.0 / NULLIF(l.login_dau, 0), 0), 4) AS 登录3留,\n    ROUND(IFNULL(l.login_day8 * 1.0 / NULLIF(l.login_dau, 0), 0), 4) AS 登录7留,\n    ROUND(IFNULL(a.activity_day2 * 1.0 / NULLIF(a.activity_dau, 0), 0), 4) AS 活动次留,\n    ROUND(IFNULL(a.activity_day4 * 1.0 / NULLIF(a.activity_dau, 0), 0), 4) AS 活动3留,\n    ROUND(IFNULL(a.activity_day8 * 1.0 / NULLIF(a.activity_dau, 0), 0), 4) AS 活动7留\nFROM login_stats l\nFULL OUTER JOIN activity_stats a ON l.stat_date = a.stat_date\nORDER BY 统计日期;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_login_di",
@@ -856,7 +856,7 @@
     {
         "sql_id": "sql_111",
         "question": "统计20220425突变组竞2.0局内数据需求感染人类坐标热区（人类的坐标）  按天分布，重点关注\n类型包括：（变身速行战士，变身隐形战士，变身钩链战士，变身强能猎手，变身冰霜领主，变身强化战士，变身龙焰猎手）\n\n输出：统计日期(yyyymmdd)，类型，x,y,z,次数",
-        "sql": "",
+        "sql": "SELECT \n    tdbank_imp_date AS statis_date,\n    changetypehero AS type,\n    changeposxhero AS x,\n    changeposyhero AS y,\n    changeposzhero AS z,\n    COUNT(*) AS times\nFROM dwd_jordass_vsteaminfectlog_hi\nWHERE tdbank_imp_date = '20220425'\n  AND changetypehero IN (1, 2, 3, 4, 5, 6, 7)\nGROUP BY tdbank_imp_date, changetypehero, changeposxhero, changeposyhero, changeposzhero;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_jordass_vsteaminfectlog_hi"
@@ -866,7 +866,7 @@
     {
         "sql_id": "sql_112",
         "question": "统计2022.04.23-2022.04.30和2022.05.01-2022.05.08传统模式存活时长达到90分钟的玩家人数，每日人数\n输出：统计日期(yyyymmdd)，人数",
-        "sql": "",
+        "sql": "SELECT\n  DATE(dteventtime) AS statis_date,\n  COUNT(DISTINCT vplayerid) AS player_count\nFROM\n  dwd_jordass_roundflow_hi\nWHERE\n  mode IN (101, 102, 103, 401, 402, 403)\n  AND survivaltime >= 90 * 60\n  AND DATE(dteventtime) BETWEEN '2022-04-23' AND '2022-04-30'\n   OR DATE(dteventtime) BETWEEN '2022-05-01' AND '2022-05-08'\nGROUP BY\n  DATE(dteventtime)\nORDER BY\n  statis_date;",
         "复杂度": "中等",
         "table_list": [
             "dwd_jordass_roundflow_hi"
@@ -876,7 +876,7 @@
     {
         "sql_id": "sql_113",
         "question": "统计20220425-20220508组竞商店购买情况\n输出：统计日期（YYYYMMDD），商店id，人数，次数",
-        "sql": "",
+        "sql": "SELECT \n  REPLACE(SUBSTR(dteventtime, 1, 10), '-', '') AS 统计日期,\n  shopid AS 商店id,\n  COUNT(DISTINCT vplayerid) AS 人数,\n  COUNT(*) AS 次数\nFROM dwd_jordass_vsteamshoplog_hi\nWHERE REPLACE(SUBSTR(dteventtime, 1, 10), '-', '') BETWEEN '20220425' AND '20220508'\nGROUP BY 统计日期, shopid\nORDER BY 统计日期, shopid;",
         "复杂度": "简单",
         "table_list": [
             "dwd_jordass_vsteamshoplog_hi"
@@ -886,7 +886,7 @@
     {
         "sql_id": "sql_115",
         "question": "统计 玩家参与\n\t新年竞赛杯（20240202-20240204，20240209-20240211）\n\t明星竞赛杯（20231208-20231210，20231215-20231217）\n\t众竞赛道（20231006-20231008，20230929-20231001，20230922-20230924）\n\t珍禽竞赛杯（20230721-20230723，20230728-20230730）\n\t都会竞速（20230519-20230611，20230616-20230625）\n\t寒域竞赛杯（20230505-20230507，20230512-20230514）\n\t飞跃竞赛杯（20230121-20230127）\n\t联队竞赛杯（20221125-20221127，20221202-20221204）\n\t职赛杯（20220819-20220821，20220826-20220828）\n\t夏日假期竞赛杯（20220722-20220724，20220729-20220731）\n\t众投竞赛（20220506-20220508，20220513-20220515，20220520-20220522）且matchmode为（1503,1603）的期数\n\t输出：每个玩家参与的不相同的期数",
-        "sql": "",
+        "sql": "SELECT \n    vplayerid,\n    COUNT(DISTINCT tournamentstage) AS unique_tournament_stages\nFROM \n    dwd_jordass_player_matchrecord_hi\nWHERE \n    ((dteventtime BETWEEN '2024-02-02 00:00:00' AND '2024-02-04 23:59:59') OR\n     (dteventtime BETWEEN '2024-02-09 00:00:00' AND '2024-02-11 23:59:59')) AND\n    matchmode IN (1503, 1603)\nGROUP BY \n    vplayerid;",
         "复杂度": "复杂",
         "table_list": [
             "dwd_jordass_player_matchrecord_hi"
@@ -896,7 +896,7 @@
     {
         "sql_id": "sql_116",
         "question": "统计全平台20250225存量用户的类型（近三个月流失，近三个月活跃但近三个月无付费，近三个月活跃且有付费），历史段位，历史付费分层情况\n\t输出：用户类型，历史段位，历史付费分层，人数",
-        "sql": "",
+        "sql": "WITH player_status AS (\n    SELECT \n        vplayerid,\n        MAX(CASE WHEN SUBSTR(cbitmap, 1, 1) = '1' THEN 1 ELSE 0 END) AS is_active_recent,\n        MAX(CASE WHEN SUBSTR(cbitmap, 1, 90) LIKE '%1%' THEN 1 ELSE 0 END) AS has_been_active_3m,\n        MAX(CASE WHEN SUBSTR(cbitmap, 1, 90) NOT LIKE '%1%' THEN 1 ELSE 0 END) AND \n        MAX(CASE WHEN SUBSTR(cbitmap, 1, 1) = '0' THEN 1 ELSE 0 END) AS is_lost_last_3m\n    FROM dws_jordass_login_df\n    WHERE dtstatdate = '20250225'\n    GROUP BY vplayerid\n),\npayer_status AS (\n    SELECT DISTINCT vplayerid\n    FROM dws_jordass_water_df\n    WHERE dtstatdate = '20250225'\n      AND SUBSTR(cbitmap, 1, 90) LIKE '%1%'\n),\npayment_tier AS (\n    SELECT \n        vplayerid,\n        CASE \n            WHEN imoney < 100 THEN 'Low'\n            WHEN imoney BETWEEN 100 AND 1000 THEN 'Medium'\n            WHEN imoney > 1000 THEN 'High'\n            ELSE 'None'\n        END AS pay_level\n    FROM (\n        SELECT vplayerid, SUM(imoney) AS imoney\n        FROM dws_jordass_water_df\n        WHERE dtstatdate = '20250225'\n        GROUP BY vplayerid\n    ) t\n),\nrank_info AS (\n    SELECT vplayerid, historymaxsegment\n    FROM dws_jordass_uid_login_df\n    WHERE dtstatdate = '20250225'\n)\nSELECT \n    CASE \n        WHEN ps.is_lost_last_3m = 1 THEN '流失用户'\n        WHEN ps.is_active_recent = 1 AND py.vplayerid IS NULL THEN '活跃未付费'\n        WHEN ps.is_active_recent = 1 AND py.vplayerid IS NOT NULL THEN '活跃付费'\n        ELSE '其他'\n    END AS user_type,\n    ri.historymaxsegment AS history_rank,\n    COALESCE(pt.pay_level, 'None') AS payment_tier,\n    COUNT(*) AS user_count\nFROM player_status ps\nLEFT JOIN payer_status py ON ps.vplayerid = py.vplayerid\nLEFT JOIN payment_tier pt ON ps.vplayerid = pt.vplayerid\nLEFT JOIN rank_info ri ON ps.vplayerid = ri.vplayerid\nGROUP BY user_type, history_rank, payment_tier\nORDER BY user_type, history_rank DESC, payment_tier;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_df",
@@ -909,7 +909,7 @@
     {
         "sql_id": "sql_117",
         "question": "统计全平台20250331-20250510当天活跃前30用户回流类型   （活跃，7日回流，14日回流，30日回流），人数\n\t输出：用户回流类型（活跃，7日回流，14日回流，30日回流）， 人数",
-        "sql": "",
+        "sql": "WITH active_users AS (\n    SELECT vplayerid, cbitmap, dtstatdate\n    FROM dws_jordass_login_df\n    WHERE dtstatdate BETWEEN '20250331' AND '20250510'\n      AND platid = 255\n),\ntop_30_active AS (\n    SELECT vplayerid\n    FROM active_users\n    GROUP BY vplayerid\n    ORDER BY COUNT(CASE WHEN SUBSTRING(cbitmap, 1, 1) = '1' THEN 1 END) DESC\n    LIMIT 30\n),\nreflow_types AS (\n    SELECT \n        a.vplayerid,\n        CASE\n            WHEN SUBSTRING(a.cbitmap, 1, 1) = '1' THEN '活跃'\n            WHEN SUBSTRING(a.cbitmap, 8, 1) = '1' AND SUBSTRING(a.cbitmap, 1, 1) = '0' THEN '7日回流'\n            WHEN SUBSTRING(a.cbitmap, 15, 1) = '1' AND SUBSTRING(a.cbitmap, 1, 1) = '0' THEN '14日回流'\n            WHEN SUBSTRING(a.cbitmap, 31, 1) = '1' AND SUBSTRING(a.cbitmap, 1, 1) = '0' THEN '30日回流'\n        END AS reflow_type\n    FROM active_users a\n    JOIN top_30_active t ON a.vplayerid = t.vplayerid\n    WHERE a.dtstatdate BETWEEN '20250331' AND '20250510'\n)\nSELECT \n    reflow_type AS 用户回流类型,\n    COUNT(*) AS 人数\nFROM reflow_types\nWHERE reflow_type IS NOT NULL\nGROUP BY reflow_type\nORDER BY \n    CASE reflow_type\n        WHEN '活跃' THEN 1\n        WHEN '7日回流' THEN 2\n        WHEN '14日回流' THEN 3\n        WHEN '30日回流' THEN 4\n    END;",
         "复杂度": "中等",
         "table_list": [
             "dws_jordass_login_df"
@@ -919,7 +919,7 @@
     {
         "sql_id": "sql_118",
         "question": "统计20240426-20240505期间活动为1193536的曝光情况\n曝光：itype='1'\n参与：itype in ('10','200','201','202','203','204','31','32','33','34','35','702','703')\n输出：曝光参与情况（曝光未参与，曝光且参与）,人数，传统模式人数，传统模式对局数，传统模式对局时长，活跃人数，活跃时长，专业赛人数，专业赛局数（按照记录数）",
-        "sql": "",
+        "sql": "WITH activity_users AS (\n    SELECT \n        suser AS vplayerid,\n        CASE WHEN itype = '1' THEN 1 ELSE 0 END AS is_exposed,\n        CASE WHEN itype IN ('10','200','201','202','203','204','31','32','33','34','35','702','703') THEN 1 ELSE 0 END AS is_participated\n    FROM dwd_jordass_mysteryplaylog_hi\n    WHERE iactid = '1193536'\n      AND dteventtime >= '2024-04-26 00:00:00'\n      AND dteventtime <= '2024-05-05 23:59:59'\n),\nexposure_stats AS (\n    SELECT \n        vplayerid,\n        MAX(is_exposed) AS is_exposed,\n        MAX(is_participated) AS is_participated\n    FROM activity_users\n    GROUP BY vplayerid\n),\nlogin_data AS (\n    SELECT \n        vplayerid,\n        SUM(ionlinetime) AS total_online_time\n    FROM dws_jordass_login_di\n    WHERE dtstatdate BETWEEN '20240426' AND '20240505'\n    GROUP BY vplayerid\n),\nround_data AS (\n    SELECT \n        vplayerid,\n        SUM(roundcnt) AS total_rounds,\n        SUM(roundtime) AS total_round_time\n    FROM dws_jordass_mode_roundrecord_di\n    WHERE dtstatdate BETWEEN '20240426' AND '20240505'\n      AND mode IN (1, 2) -- 传统模式ID假设为1和2，请根据实际调整\n    GROUP BY vplayerid\n),\ntournament_data AS (\n    SELECT DISTINCT\n        vplayerid,\n        COUNT(*) OVER (PARTITION BY vplayerid) AS tournament_rounds\n    FROM dwd_jordass_playerprofstagechange_hi\n    WHERE dteventtime >= '2024-04-26 00:00:00'\n      AND dteventtime <= '2024-05-05 23:59:59'\n)\nSELECT \n    CASE \n        WHEN e.is_exposed = 1 AND e.is_participated = 0 THEN '曝光未参与'\n        WHEN e.is_exposed = 1 AND e.is_participated = 1 THEN '曝光且参与'\n    END AS exposure_participation_status,\n    COUNT(DISTINCT e.vplayerid) AS user_count,\n    COUNT(DISTINCT CASE WHEN r.total_rounds > 0 THEN e.vplayerid END) AS traditional_mode_user_count,\n    COALESCE(SUM(r.total_rounds), 0) AS traditional_mode_round_count,\n    COALESCE(SUM(r.total_round_time), 0) AS traditional_mode_round_duration,\n    COUNT(DISTINCT l.vplayerid) AS active_user_count,\n    COALESCE(SUM(l.total_online_time), 0) AS active_duration,\n    COUNT(DISTINCT t.vplayerid) AS professional_tournament_user_count,\n    COALESCE(SUM(t.tournament_rounds), 0) AS professional_tournament_round_count\nFROM exposure_stats e\nLEFT JOIN login_data l ON e.vplayerid = l.vplayerid\nLEFT JOIN round_data r ON e.vplayerid = r.vplayerid\nLEFT JOIN tournament_data t ON e.vplayerid = t.vplayerid\nWHERE e.is_exposed = 1\nGROUP BY \n    CASE \n        WHEN e.is_exposed = 1 AND e.is_participated = 0 THEN '曝光未参与'\n        WHEN e.is_exposed = 1 AND e.is_participated = 1 THEN '曝光且参与'\n    END\nORDER BY exposure_participation_status;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_mode_roundrecord_di",
@@ -932,7 +932,7 @@
     {
         "sql_id": "sql_119",
         "question": "2025年4月29日，2025年6月1日这两天\n在后续半个月未登录用户，在后续半个月有登录用户：\n输出：统计日期（yyyymmdd）,用户类型（后续半个月未登录，后续半个月有登录，新增、7日以内留存（不含当天的前七日后面同理）、7~14日回流、14~30日回流、30~90日回流、90日以上回流的用户量级），人数",
-        "sql": "",
+        "sql": "WITH base_data AS (\n    SELECT\n        dtstatdate,\n        vplayerid,\n        cbitmap,\n        dregdate\n    FROM dws_jordass_uid_login_df\n    WHERE dtstatdate IN ('20250429', '20250601')\n      AND platid = 255\n),\nfuture_login AS (\n    SELECT\n        b.dtstatdate AS stat_date,\n        b.vplayerid,\n        CASE \n            WHEN COUNT(f.vplayerid) > 0 THEN '后续半个月有登录'\n            ELSE '后续半个月未登录'\n        END AS login_status\n    FROM base_data b\n    LEFT JOIN dws_jordass_login_di f\n        ON b.vplayerid = f.vplayerid\n        AND f.dtstatdate > b.dtstatdate\n        AND f.dtstatdate <= DATE_ADD(b.dtstatdate, INTERVAL 15 DAY)\n        AND f.platid = 255\n    GROUP BY b.dtstatdate, b.vplayerid\n),\nuser_classification AS (\n    SELECT\n        dtstatdate AS stat_date,\n        vplayerid,\n        dregdate,\n        cbitmap,\n        CASE\n            WHEN dregdate = dtstatdate THEN '新增'\n            WHEN SUBSTRING(cbitmap, 2, 7) LIKE '%1%' THEN '7日以内留存'\n            WHEN SUBSTRING(cbitmap, 9, 7) LIKE '%1%' AND SUBSTRING(cbitmap, 2, 8) NOT LIKE '%1%' THEN '7~14日回流'\n            WHEN SUBSTRING(cbitmap, 16, 15) LIKE '%1%' AND SUBSTRING(cbitmap, 2, 15) NOT LIKE '%1%' THEN '14~30日回流'\n            WHEN SUBSTRING(cbitmap, 31, 60) LIKE '%1%' AND SUBSTRING(cbitmap, 2, 30) NOT LIKE '%1%' THEN '30~90日回流'\n            WHEN SUBSTRING(cbitmap, 91, 10) LIKE '%1%' AND SUBSTRING(cbitmap, 2, 90) NOT LIKE '%1%' THEN '90日以上回流'\n            ELSE '未知类型'\n        END AS user_type\n    FROM base_data\n)\nSELECT\n    uc.stat_date AS 统计日期,\n    CONCAT(uc.user_type, '-', fl.login_status) AS 用户类型,\n    COUNT(*) AS 人数\nFROM user_classification uc\nJOIN future_login fl \n    ON uc.stat_date = fl.stat_date AND uc.vplayerid = fl.vplayerid\nGROUP BY uc.stat_date, uc.user_type, fl.login_status\nORDER BY uc.stat_date, 用户类型;",
         "复杂度": "复杂",
         "table_list": [
             "dws_jordass_login_df",
@@ -943,7 +943,7 @@
     {
         "sql_id": "sql_120",
         "question": "统计用户（2025.7月24~7月25日持续活跃，2025.7.24活跃7.25流失到盘外），且帐号体系为qq的性别人数\n输出：用户类型（7月24~7月25日持续活跃，7.24活跃7.25流失到盘外）,性别,人数",
-        "sql": "",
+        "sql": "WITH continuous_active_users AS (\n    SELECT vplayerid\n    FROM dws_jordass_login_df\n    WHERE dtstatdate = '20250725'\n      AND SUBSTR(cbitmap, 1, 1) = '1'  -- 7月25日活跃\n      AND SUBSTR(cbitmap, 2, 1) = '1'  -- 7月24日活跃\n),\nlost_users AS (\n    SELECT vplayerid\n    FROM dws_jordass_login_df\n    WHERE dtstatdate = '20250725'\n      AND SUBSTR(cbitmap, 1, 1) = '0'  -- 7月25日未活跃（流失）\n      AND SUBSTR(cbitmap, 2, 1) = '1'  -- 7月24日活跃\n),\ntarget_users AS (\n    SELECT vplayerid FROM continuous_active_users\n    UNION ALL\n    SELECT vplayerid FROM lost_users\n),\nuser_gender AS (\n    SELECT DISTINCT t.vplayerid,\n           CASE WHEN c.vplayerid IS NOT NULL THEN '7月24~7月25日持续活跃' ELSE '7月24活跃7月25流失到盘外' END AS user_type,\n           u.gender\n    FROM target_users t\n    LEFT JOIN continuous_active_users c ON t.vplayerid = c.vplayerid\n    LEFT JOIN dws_jordass_uid_login_df u ON t.vplayerid = u.vplayerid AND u.dtstatdate = '20250725'\n),\nqq_users AS (\n    SELECT suserid AS qq_userid\n    FROM dws_mgamejp_login_user_activity_di\n    WHERE dtstatdate = 20250725\n      AND saccounttype = 'qq'\n)\nSELECT \n    ug.user_type,\n    COALESCE(ug.gender, -1) AS gender,\n    COUNT(*) AS 人数\nFROM user_gender ug\nJOIN dim_mgamejp_tbplayerid2qq_nf dq ON ug.vplayerid = dq.splayerid AND dq.dtstatdate = 20250725\nJOIN qq_users qu ON CAST(dq.iqq AS STRING) = qu.qq_userid\nGROUP BY ug.user_type, COALESCE(ug.gender, -1);",
         "复杂度": "复杂",
         "table_list": [
             "dws_mgamejp_login_user_activity_di",
