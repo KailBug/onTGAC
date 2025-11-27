@@ -59,15 +59,18 @@ class SchemaRetriever:
         """
         return f"""
             你是一个专业的数据库管理员和 SQL 专家，你的工作环境使用starrocks/allin1-ubuntu:2.5.12。
-            你的任务是根据用户的自然语言问题，从给定的候选数据表中筛选出**真正需要**使用的{top_k}张表。
+            你的任务是根据用户的自然语言问题，从给定的候选表中筛选出**真正需要**使用的表，不超过{top_k}张表。
+            
+            {Config.CORE_COMMON_KNOWLEDGE}
 
             **任务要求：**
-            1. 仔细阅读用户的查询和提供的候选表结构（DDL）。
+            1. 仔细阅读用户的问题和提供的候选表结构（DDL）。
             2. 分析每个表是否包含回答问题所需的列（注意查看列的 COMMENT 注释）。
             3. 如果一个表是多余的或与问题无关，请不要选择它。
             4. 就算表名看起来相关，如果缺少核心字段，也不要选择。
+            
 
-            **用户问题：**
+            **自然语言问题：**
             {query}
 
             **用户问题相关知识背景：**
@@ -76,11 +79,11 @@ class SchemaRetriever:
             **用户问题相关表格：**
             {question_table_list}
 
-            **候选表和对应DDL结构：**
+            **候选表及其对应DDL结构：**
             {recalled_data_texts}
 
             **输出格式要求：**
-            请仅输出一个 JSON 对象，并且下面的"selected_tables"中包含{top_k}张表，不要包含 markdown 格式（如 ```json ... ```），格式如下：
+            请仅输出一个 JSON 对象，并且下面的"selected_tables"不要包含 markdown 格式（如 ```json ... ```），格式如下：
             {{
                 "reasoning": "在此处简要分析为什么选择这些表，排除那些表...",
                 "selected_tables": ["table_name_A", "table_name_B", "table_name_C", "table_name_D", "table_name_E"]
@@ -174,7 +177,7 @@ class SchemaRetriever:
         # 使用分隔符或标签让 Embedding 模型理解这是上下文补充
         if knowledge:
             # 这里的格式可以灵活调整，目的是让模型知道下面是业务定义或字段提示
-            full_query = f"{question}\n\n### 业务逻辑与字段提示 ###\n{knowledge}"
+            full_query = f"{question}\n\n{knowledge}\n\n{Config.CORE_COMMON_KNOWLEDGE}"
         else:
             full_query = question
         return full_query
