@@ -2,6 +2,7 @@
 把generator从agent抽离出来
 将用于生成sql的prompt和LLM都放到这里
 """
+import json
 import re
 import dashscope
 from dashscope import Generation
@@ -16,9 +17,12 @@ dashscope.api_key = Config.QWEN_API_KEY
 
 class SQLGenerator:
     def __init__(self):
-        self.system_prompt = """
+        self.system_prompt = f"""
             你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师。
-            你的任务是将用户的自然语言问题转换为精确、高效的 SQL 查询。
+            你的任务是将用户的自然语言问题转换为正确的 SQL 查询。
+            **下面是你工作时使用的知识和SQL生成规则**:
+            
+            {Config.COMMON_KNOWLEDGE}
             """
         self.response = None
         self.messages = None
@@ -49,32 +53,23 @@ class SQLGenerator:
 
         return sql_content
 
-    def _generate_user_prompt(self,question,schema,knowledge,table_list):
-        return f"""
-                {Config.COMMON_KNOWLEDGE}
+    def _generate_user_prompt(self,question,schema,knowledge_rules,table_list_ddl):
+        return f"""                
+                ### 1. 用户问题: {question}                             
                 
-                ## 以下为用户问题以及其他输出要求:
+                ### 2. Schema 表信息: {schema}
+                                     {table_list_ddl}
                 
-                ### 1. 问题: {question}
-                
-                ### 2. Schema 信息: {schema}
-                
-                ### 3. 执行的过滤条件: {knowledge}
+                ### 3. 执行的过滤条件: {knowledge_rules}                                 
         
-                ### 4. table_list: {table_list}                  
+                ### 4. 核心指令 (必须严格遵守)
+                 **方言兼容**: 使用 StarRocks v2.5.12 语法;
+                 **Schema Linking**: 在生成SQL前，先仔细分析问题涉及的Table和Column，在生成的SQL中使用的Table和Column必须在Schema信息表中**真实存在**;
+                 **格式约束**: 确保 SQL 语句以分号 `;` 结尾;
         
-                ### 5. 核心指令 (必须严格遵守)
-                1. **方言兼容**: 使用 StarRocks v2.5.12 语法（高度兼容 MySQL 协议）。注意日期函数的使用（如 `date_trunc`, `str_to_date` 等）需符合 StarRocks 规范。
-                2. **Schema Linking**: 在生成 SQL 前，先仔细分析问题涉及的 Table 和 Column，严格遵守schema和knowledge信息，不要通过幻觉生成不存在的字段。
-                3. **格式约束**: 
-                   - SQL 语句必须以 SELECT/INSERT/UPDATE/DELETE 开头。
-                   - **严禁**使用 Markdown 代码块格式（如 ```sql ... ```），直接输出 SQL 文本。
-                   - 确保 SQL 语句以分号 `;` 结尾。
+                ### 5. 响应格式
+                严格按照以下格式输出，不要包含任何其他内容:
         
-                ### 7. 响应格式
-                请严格按照以下格式输出，不要包含任何其他开场白或结束语：
-        
-                思考: [这里进行思维链推导：1.识别涉及的表和字段 -> 2.确定连接条件(JOIN) -> 3.确定筛选条件(WHERE) -> 4.确定聚合方式(GROUP BY)]
                 SQL: [这里仅输出最终的 SQL 语句]
                 """
 
@@ -82,10 +77,35 @@ class SQLGenerator:
         #暂时采用静态few-shot
         return Config.FEW_SHOT_EXAMPLES
 
+    def _get_table_list_ddl(self, table_list):
+        """根据 table_list 从 json 映射文件中提取 DDL 并合并为一个字符串。"""
+        try:
+            # 读取 JSON 文件
+            with open(Config.schemaddl_mapping_file_path, 'r', encoding='utf-8') as f:
+                ddl_mapping = json.load(f)
+
+            result_parts = []
+            # 遍历列表并提取 DDL
+            for table_name in table_list:
+                if table_name in ddl_mapping:
+                    ddl_content = ddl_mapping[table_name]
+                    # 可以在这里加一个注释头，方便区分（可选）
+                    result_parts.append(f"{table_name}\n{ddl_content}")
+                else:
+                    # 如果找不到对应的表，记录一条警告注释
+                    result_parts.append(f"")
+            # 4用换行符拼接所有 DDL
+            return "\n\n".join(result_parts)
+
+        except json.JSONDecodeError:
+            return f"Error: 文件 '{Config.schemaddl_mapping_file_path}' 不是有效的 JSON 格式。"
+        except Exception as e:
+            return f"Error: 发生未知错误 - {str(e)}"
+
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def _call_LLM(self):
         return Generation.call(
-            model="qwen-coder-plus",
+            model="qwen3-coder-480b-a35b-instruct",
             messages=self.messages,
             result_format="message"
         )
@@ -95,13 +115,13 @@ class SQLGenerator:
         user_prompt = self._generate_user_prompt(
             question=state.get("query"),
             schema=state.get("schema"),
-            knowledge=state.get("knowledge_rules"),
-            table_list=state.get("table_list")
+            knowledge_rules=state.get("knowledge_rules"),
+            table_list_ddl=self._get_table_list_ddl(state.get("table_list"))
         )
         self.messages = [{
             "role": "system",
             "content": f"{self.system_prompt}"
-        },
+            },
             {
                 "role": "user",
                 "content": f"{user_prompt}",

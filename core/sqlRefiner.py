@@ -3,17 +3,15 @@
 方案A:使用qwen-coder-plus
 方案B:使用qwen-coder-plus + kimi-k2-thinking
 """
+import json
 import re
 from http import HTTPStatus
-import dashscope
-from dashscope import Generation
 from tenacity import retry, stop_after_attempt, wait_fixed
 from colorama import Fore, Style
+from openai import OpenAI
 
 from core.config import Config
 from core.agentState import AgentState
-
-dashscope.api_key = Config.QWEN_API_KEY
 
 class SQLRefiner:
     def __init__(self):
@@ -21,10 +19,10 @@ class SQLRefiner:
         接收AgentState，提取错误的SQL让LLM生成新的SQL，更新AgentState返回
         """
         self.fix_system_prompt = f"""
-            你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师,给用户生成的SQL查询执行错误，
+            你是一位精通 starrocks/allin1-ubuntu:2.5.12 数据库的首席数据架构师,
             你的任务是根据**错误消息**和**提供的正确表模式**修复SQL，得到一个正确的SQL。
             
-            ## 下面是你掌握的业务知识：
+            ## 下面是你掌握的业务知识和使用的SQL生成规则:
             {Config.COMMON_KNOWLEDGE}
         """
         self.response = None
@@ -33,38 +31,74 @@ class SQLRefiner:
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def _call_LLM(self):
-        self.response = Generation.call(
-            model="qwen-coder-plus",
-            messages=self.messages,
-            result_format="message"
+        client = OpenAI(
+            api_key=Config.KIMI_API_KEY,
+            base_url=Config.KIMI_BASE_URL,
         )
 
-    def _generate_fix_prompt(self, question, wrong_sql, error_msg, schema_info, knowledge):
+        try:
+            completion = client.chat.completions.create(
+                # 注意：Kimi 标准公开模型通常为 "moonshot-v1-8k" 等。
+                model="kimi-k2-thinking-turbo",
+                messages=self.messages,
+                temperature=0.1,  # SQL 修复任务建议降低温度以保证严谨性
+            )
+            # 直接提取内容字符串赋值给 self.response
+            # 下游的 _parse_output 方法中有 `if isinstance(response, str)` 的判断，可以完美兼容
+            self.response = completion.choices[0].message.content
+
+        except Exception as e:
+            print(f"{Fore.RED}Kimi API Call Error: {e}{Style.RESET_ALL}")
+            # 抛出异常以触发 @retry 重试机制
+            raise e
+
+    def _generate_fix_prompt(self, question, wrong_sql, error_msg, schema_info, knowledge,table_list_ddl):
         """
         构造用于修复SQL的 Prompt
         """
-        return f"""                                
-                ### 内容
-                - **用户问题**: {question}
-                - **Table Schema**: {schema_info}
+        return f"""                
+                **用户原始问题**: {question}
+                **Table和Schema信息**: {schema_info}
+                                  {table_list_ddl}
                 
-                ### 执行的过滤条件:
-                - {knowledge}
+                **执行的过滤条件**:{knowledge}               
                 
-                ### 执行后反馈信息
-                - **Error SQL**: {wrong_sql}
-                - **报错信息**: {error_msg}
+                **执行后的报错信息**: {error_msg}
+                **执行失败的SQL语句**: {wrong_sql}
                 
-                ### Requirement
-                1. 分析错误发生的原因（例如，列名错误、语法错误）。
-                2. 仔细检查“Table Schema”以找到正确的列名或语法。
-                3. 在"SQL:"后面只输出正确的SQL查询。
-                4. 确保SQL与StarRocks v2.5.12兼容。
+                ### 严格核心指令
+                1. 根据报错信息，仔细检查Table Schema中的信息，找到正确的Table和Column名称，新生成的SQL中使用的Table和Column必须**真实存在**;
+                2. 确保生成的SQL以";"结尾;
+                3. 确保SQL与StarRocks v2.5.12兼容。
                 
-                ###请严格按照以下格式输出，不要包含任何其他开场白或结束语：            
-                思考: [这里进行给出你的分析原因]
+                ###严格按照以下格式输出，不要包含任何其他内容：            
                 SQL: [这里仅输出最终的 SQL 语句]
                 """
+
+    def _get_table_list_ddl(self, table_list):
+        """根据 table_list 从 json 映射文件中提取 DDL 并合并为一个字符串。"""
+        try:
+            # 读取 JSON 文件
+            with open(Config.schemaddl_mapping_file_path, 'r', encoding='utf-8') as f:
+                ddl_mapping = json.load(f)
+
+            result_parts = []
+            # 遍历列表并提取 DDL
+            for table_name in table_list:
+                if table_name in ddl_mapping:
+                    ddl_content = ddl_mapping[table_name]
+                    # 可以在这里加一个注释头，方便区分（可选）
+                    result_parts.append(f"{table_name}\n{ddl_content}")
+                else:
+                    # 如果找不到对应的表，记录一条警告注释
+                    result_parts.append(f"")
+            # 4用换行符拼接所有 DDL
+            return "\n\n".join(result_parts)
+
+        except json.JSONDecodeError:
+            return f"Error: 文件 '{Config.schemaddl_mapping_file_path}' 不是有效的 JSON 格式。"
+        except Exception as e:
+            return f"Error: 发生未知错误 - {str(e)}"
 
     @staticmethod
     def _parse_output(response):
@@ -123,9 +157,10 @@ class SQLRefiner:
             schema_info=state.get("schema"),
             error_msg=state.get("error_msg"),
             wrong_sql=state.get("current_sql"),
-            knowledge=state.get("knowledge_rules")
+            knowledge=state.get("knowledge_rules"),
+            table_list_ddl=self._get_table_list_ddl(state.get("table_list"))
         )
-        self.messages = messages = [
+        self.messages = [
             {
                 "role": "system",
                 "content": f"{self.fix_system_prompt}"
