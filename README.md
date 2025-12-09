@@ -1,66 +1,25 @@
 
-![Logo](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/th5xamgrr6se0x5ro4g6.png)
-
-
-## 徽标
-
-从以下位置添加徽章：[shields.io](https://shields.io/)
+![Logo](asset/pic.png)
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://opensource.org/licenses/)
-[![AGPL License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 
 
-# 项目标题
+# onTGAC
 
-简要说明这个项目是做什么的，是为谁做的
-
-
-## 特性
-
-- 光明/黑暗模式切换
-- 在线预览
-- 全屏模式
-- 跨平台
+### 本仓库作为参加2025年腾讯游戏算法大赛Text2SQL（第三赛道）的项目代码仓库
+#### 项目采用双模型驱动，整体流程包括DDL数据预处理、schema检索粗选、精选、SQL生成、SQL执行、SQL Refine和分数评价这几部分。
 
 
-## 环境变量
+## 前置环境变量
 
-要运行这个项目，你将需要在你的 .env 文件中添加以下环境变量
+要运行这个项目，你将需要：
+- 在你的本地 .env 文件中添加自定义的API_KEY
+- 修改config.py文件中对应的LLM配置数据
 
-`API_KEY`
+## 环境创建
 
-`ANOTHER_API_KEY`
-
-
-## 开发
-
-要部署这个项目，请运行
-
-```bash
-  npm run deploy
+```python
+conda create -n tgac-track-3 python=3.11 -y
+conda activate tgac-track-3 
+pip install -r requirements.txt
 ```
-
-
-## 使用方法/示例
-
-```javascript
-import Component from 'my-project'
-
-function App() {
-  return <Component />
-}
-```
-
-
-## 技术栈
-
-**客户端:** React, Redux, TailwindCSS
-
-**服务端:** Node, Express
-
-
-## 经验和教育
-
-你在建设这个项目时学到了什么？你遇到了什么挑战，你是如何克服的？
-
